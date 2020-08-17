@@ -4026,12 +4026,6 @@ class GUIT1probeOneTime(egg.gui.Window):
         """
         _debug('GUIT1probeOneTimes: button_prepare_experiment_clicked')   
 
-        # Initiate the prior, functions, etc. 
-        self.initiate_attributes()
-        
-        #Initialize the plot
-        self.update_plot_posterior()
-
         # Prepare the sequence accoring to the best knowledge that we have so far. 
         self.prepare_pulse_sequence()
         
@@ -4048,17 +4042,16 @@ class GUIT1probeOneTime(egg.gui.Window):
         _debug('GUIT1probeOneTimes: prepare_pulse_sequence')
         
 
-        DIO_laser       = self.treeDic_settings['DIO_laser']
+        DIO_laser         = self.treeDic_settings['DIO_laser']
         DIO_PM_p          = self.treeDic_settings['DIO_pulse_modulation_ms+1']
         DIO_PM_m          = self.treeDic_settings['DIO_pulse_modulation_ms-1']
-        DIO_sync        = self.treeDic_settings['DIO_sync_scope']
-        DIO_control_f   = self.treeDic_settings['DIO_control_frequency']
+        DIO_sync          = self.treeDic_settings['DIO_sync_scope']
         
         dt_laser      = self.treeDic_settings['dt_laser_initiate'] # Interval of time for shining the laser
         dt_readout    = self.treeDic_settings['dt_readout']
         dt_wait_ms0_pi= self.treeDic_settings['dt_wait_after_initiate'] #How much time to wait between ms=0 and pi pulse
-        dt_pi_pulse_m1   = self.treeDic_settings['dt_pi_pulse_ms_-1'] # Duration of the pi-pulse for ms=-1
-        dt_pi_pulse_p1   = self.treeDic_settings['dt_pi_pulse_ms_+1'] # Duration of the pi-pulse for ms=+1
+        dt_pi_pulse_m1   = self.treeDic_settings['dt_pi_pulse_ms-1'] # Duration of the pi-pulse for ms=-1
+        dt_pi_pulse_p1   = self.treeDic_settings['dt_pi_pulse_ms+1'] # Duration of the pi-pulse for ms=+1
         delay_read    = self.treeDic_settings['delay_read_before_laser'] # Delay (us) that we read before shining the laser 
             
         self.t_probe = self.treeDic_settings['t_probe']
@@ -4086,9 +4079,7 @@ class GUIT1probeOneTime(egg.gui.Window):
         # Channel for the Pi-pulse initializing ms=+1 
         channel_RF_p    = ChannelPulses(channel=DIO_PM_p , name='Pi pulse ms+1')
         # Channel for the Pi-pulse initializing ms=-1 
-        channel_RF_m    = ChannelPulses(channel=DIO_PM_m , name='Pi pulse ms-1')
-        # Channel for controlling the frequency
-        channel_control_f = ChannelPulses(channel=DIO_control_f, name='Control frequency')        
+        channel_RF_m    = ChannelPulses(channel=DIO_PM_m , name='Pi pulse ms-1')      
         
         # Set the reference time
         t0 = dt_sync_scope
@@ -4097,9 +4088,8 @@ class GUIT1probeOneTime(egg.gui.Window):
         channel_laser.add_pulses([t0, t0+dt_laser])
         
         # Let evolve the state
-        tref = channel_laser.get_pulses_times()[-1] + t_probe_us
+        tref = channel_laser.get_pulses_times()[-1] + self.t_probe
         
-
         # Read it. Start to read slightly a little bit before the laser is shone
         channel_read.add_pulses([tref - delay_read, tref + dt_readout])    
         
@@ -4110,18 +4100,15 @@ class GUIT1probeOneTime(egg.gui.Window):
         t0 = channel_laser.get_pulses_times()[-1]
             
         # At this point, the state is ms=0
-            
         
         # Let's flip the state into ms=-1
         # Note at which time to start the RF for flipping the state
         tref_RF = t0 + dt_wait_ms0_pi
-        # Modulate the swicth for controlling the frequency
-        channel_control_f.add_pulses([tref_RF-dt_control_f/2, tref_RF+dt_control_f/2]) # Make it bigger for it to match.
-        # Send thepi-pulse
+        # Send the pi-pulse
         channel_RF_m.add_pulses([tref_RF, tref_RF + dt_pi_pulse_m1]) # Flip in ms=-1
         
         # Let evolve the state 
-        tref = channel_RF_m.get_pulses_times()[-1] + t_probe_us 
+        tref = channel_RF_m.get_pulses_times()[-1] + self.t_probe 
         # Read it. Start to read slightly a little bit before the laser is shone
         channel_read.add_pulses([tref - delay_read, tref + dt_readout])  
 
@@ -4136,26 +4123,30 @@ class GUIT1probeOneTime(egg.gui.Window):
         # Let's flip the state into ms=+1
         # Note at which time to start the RF for flipping the state
         tref_RF = t0 + dt_wait_ms0_pi
-        channel_RF_p.add_pulses([tref_RF, tref_RF + dt_pi_pulse_p1]) # Flip in ms=+1
+        # Send the pi-pulse
+        channel_RF_p.add_pulses([tref_RF, tref_RF + dt_pi_pulse_p1]) # Flip in ms=-1
         # Let evolve the state 
-        tref = channel_RF_p.get_pulses_times()[-1] + t_probe_us   
+        tref = channel_RF_p.get_pulses_times()[-1] + self.t_probe   
         # Read it. Start to read slightly a little bit before the laser is shone
         channel_read.add_pulses([tref - delay_read, tref + dt_readout])  
 
         # Shine the laser for both reading and for initializing into ms=0
         channel_laser.add_pulses([tref, tref+dt_laser])          
+        
+        # Read again at the end for the reference
+        t0 = channel_laser.get_pulses_times()[-1]
+        channel_read.add_pulses([t0 - dt_readout, t0])  
 
-        # Update the reference time
-        t0 = channel_laser.get_pulses_times()[-1]                     
+
+                
                 
                 
         # Add all that masterpiece to a block
-        block = PulsePatternBlock(name='Block tprobe = %.2f us'%t_probe_us)
+        block = PulsePatternBlock(name='Block tprobe = %.2f us'%self.t_probe)
         block.add_channelEvents([channel_laser, 
                                  channel_RF_p, 
                                  channel_RF_m,
-                                 channel_read,
-                                 channel_control_f ])
+                                 channel_read])
         # Add the trigger for synchronizing the scope only on the first block
         block.add_channelEvents([channel_sync])
         
@@ -4163,22 +4154,6 @@ class GUIT1probeOneTime(egg.gui.Window):
         sequence.add_block(block)             
             
         self.sequence =  sequence
-
-    def databoxplot_update(self):
-        """
-        Update the plot
-        """
-        _debug('GUIAdaptiveT1Bayes: databoxplot_update')
-        # Clear the plot
-        self.databoxplot.clear() 
-                
-        self.databoxplot['Time_(us)'] = self.t_probe_s
-        # Loop over each readout 
-        for i, count_per_readout in enumerate(self.counts_total):
-            # Create a curve
-            self.databoxplot['Total_counts_%d'%i] = count_per_readout
-        # Show it
-        self.databoxplot.plot()   
         
     def after_one_loop(self, counts, iteration, rep):
         """
@@ -4237,8 +4212,6 @@ class GUIT1probeOneTime(egg.gui.Window):
             # Increment the counts
             self.counts_total += np.array(self.counts)  
             
-        # Update the plot
-        self.databoxplot_update()
         
     def event_prepare_experiment(self): 
         """
