@@ -3913,16 +3913,21 @@ class GUIT1TimeTrace3(egg.gui.Window):
         text+='\nWith the current sequence, this should take at least %0.2f minutes'%T_minutes
         self.label_estimates.set_text(text)        
         
-class GUIT1probeOneTime(egg.gui.Window):
+class GUIAdaptiveT1Bayes(egg.gui.Window):
     """
-    GUI for preparing the states and let them decay until a single time.
-    """   
+    GUI for preparing and meausring T1 with an adaptive protocole. 
+    The measurement is the counts at a single time from each state (ms=0 and 
+    ms=-1 and ms=+1). 
     
-    def __init__(self, name="Single probe T1", size=[1000,500]): 
+    After each iteration, we select a new set of parameter before the next 
+    iteration for a better sentisitivity. 
+    
+    """   
+    def __init__(self, name="Adaptive T1 Bayes", size=[1000,500]): 
         """
         Initialize
         """    
-        _debug('GUIT1probeOneTime:__init__')
+        _debug('GUIAdaptiveT1Bayes:__init__')
         
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -3934,8 +3939,8 @@ class GUIT1probeOneTime(egg.gui.Window):
         """
         Fill up the GUI
         """        
-        _debug('GUIT1probeOneTime: initialize_GUI')
-        _debug('')
+        _debug('GUIAdaptiveT1Bayes: initialize_GUI')
+        _debug('Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it. – The Lion King')
         
         # A button for preparing stuff
         self.button_prepare_experiment = egg.gui.Button('Prepare',
