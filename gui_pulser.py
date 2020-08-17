@@ -24,13 +24,8 @@ import gui_signal_generator
 
 import time
 
-# For adaptive protocols
-import protocol_model
-import protocol_bayes
-
 
 # Debug stuff.
-_fc._debug_enabled = False
 _debug_enabled     = False
 
 def _debug(*a):
@@ -52,6 +47,7 @@ class GuiMainPulseSequence(egg.gui.Window):
             The session of the fpga must already be open.    
         """    
         _debug('GuiMainPulseSequence:__init__')
+        _debug('Don’t watch the clock; do what it does. Keep going. – Sam Levenson')
         
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -828,6 +824,7 @@ class GUIPulseBuilder(egg.gui.Window):
         Initialize 
         """    
         _debug('GUIPulseBuilder:__init__')
+        _debug('Be a fruitloop in a world of Cheerios.')
         
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -1072,6 +1069,7 @@ class GUIPredefined(egg.gui.Window):
 
         """    
         _debug('GUIPredefined:__init__')
+        _debug('The best way to predict your future is to create it. – Abraham Lincoln')
         
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -3912,22 +3910,18 @@ class GUIT1TimeTrace3(egg.gui.Window):
         text+='\nIt should take %d readout before distinguishing those states'%N_min
         text+='\nWith the current sequence, this should take at least %0.2f minutes'%T_minutes
         self.label_estimates.set_text(text)        
-        
-class GUIAdaptiveT1Bayes(egg.gui.Window):
+  
+      
+class GUIT1probeOneTime(egg.gui.Window):
     """
-    GUI for preparing and meausring T1 with an adaptive protocole. 
-    The measurement is the counts at a single time from each state (ms=0 and 
-    ms=-1 and ms=+1). 
-    
-    After each iteration, we select a new set of parameter before the next 
-    iteration for a better sentisitivity. 
-    
+    GUI for preparing the states and let them decay until a single time.
     """   
-    def __init__(self, name="Adaptive T1 Bayes", size=[1000,500]): 
+    
+    def __init__(self, name="Single probe T1", size=[1000,500]): 
         """
         Initialize
         """    
-        _debug('GUIAdaptiveT1Bayes:__init__')
+        _debug('GUIT1probeOneTime:__init__')
         
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -3939,8 +3933,8 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         """
         Fill up the GUI
         """        
-        _debug('GUIAdaptiveT1Bayes: initialize_GUI')
-        _debug('Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it. – The Lion King')
+        _debug('GUIT1probeOneTime: initialize_GUI')
+        _debug('Punctuality is not just limited to arriving at a place at right time, it is also about taking actions at right time. ― Amit Kalantri')
         
         # A button for preparing stuff
         self.button_prepare_experiment = egg.gui.Button('Prepare',
@@ -3949,76 +3943,39 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         self.connect(self.button_prepare_experiment.signal_clicked, 
                      self.button_prepare_experiment_clicked)
             
+        # A button for preparing stuff
+        self.button_prepare_experiment = egg.gui.Button('Prepare',
+                                                        tip='Prepare the measurement before running')
+        self.place_object(self.button_prepare_experiment, row=1, column=0)
+        self.connect(self.button_prepare_experiment.signal_clicked, 
+                     self.button_prepare_experiment_clicked)
+            
         # tree dictionnarry for the settings
-        self.treeDic_settings = egg.gui.TreeDictionary(autosettings_path='setting_adaptive_T1Bayes')
+        self.treeDic_settings = egg.gui.TreeDictionary(autosettings_path='setting_T1_singleTime')
         self.place_object(self.treeDic_settings, row=2, column=0)
 
-        self.treeDic_settings.add_parameter('Power_ms_+1', -20, 
+        self.treeDic_settings.add_parameter('Power', -20, 
                                             type='float', step=1, 
                                             bounds=[-50,30], suffix=' dBm',
-                                            tip='Constant power of the pi pulse of ms=+1')
-        self.treeDic_settings.add_parameter('Frequency_ms_+1', 3, 
+                                            tip='Constant power of the RF')
+        self.treeDic_settings.add_parameter('Frequency', 3, 
                                             type='float', step=0.1, 
                                             bounds=[0,10], suffix=' GHz',
-                                            tip='Frequency of the pi pulse of ms=+1')     
-        self.treeDic_settings.add_parameter('dt_pi_pulse_ms_+1', 0.3, 
-                                            type='float', step=0.1, 
-                                            bounds=[0,None], suffix=' us',
-                                            tip='Duration of pi pulse (RF) for ms=+1')         
-        self.treeDic_settings.add_parameter('Power_ms_-1', -20, 
-                                            type='float', step=1, 
-                                            bounds=[-50,30], suffix=' dBm',
-                                            tip='Constant power of the pi pulse of ms=-1')
-        self.treeDic_settings.add_parameter('Frequency_ms_-1', 3, 
-                                            type='float', step=0.1, 
-                                            bounds=[0,10], suffix=' GHz',
-                                            tip='Frequency of the pi pulse of ms=-1')     
-        self.treeDic_settings.add_parameter('dt_pi_pulse_ms_-1', 0.3, 
-                                            type='float', step=0.1, 
-                                            bounds=[0,None], suffix=' us',
-                                            tip='Duration of pi pulse (RF) for ms=-1')   
-
-        self.treeDic_settings.add_parameter('N_repeat_same_state', 3, 
-                                            type='int', step=1, 
-                                            bounds=[0,None],
-                                            tip='Number of time to repeat the measure of one state at the same time before measuring the next state.\nThis is useful if it is long for switching frequency.') 
-
-        self.treeDic_settings.add_parameter('PL0', 0.04, 
-                                            type='float', step=0.04, 
-                                            bounds=[0,None], 
-                                            tip='Mean photocounts from ms=0 for a SINGLE readout') 
-        self.treeDic_settings.add_parameter('Contrast', 0.1, 
-                                            type='float', step=0.01, 
-                                            bounds=[0,None], 
-                                            tip='Contrast between the state ms=0 and ms=+-1 at time=0.\nThis is defined as (PL0-PL+-)/PL0, where PL+- is the mean photocount of ms=+-1.') 
+                                            tip='Frequency of the RF') 
         
-        self.treeDic_settings.add_parameter('Rate_+_min', 0.01, 
+        self.treeDic_settings.add_parameter('t_probe', 10, 
                                             type='float', step=0.1, 
-                                            bounds=[0,None], suffix=' Hz',
-                                            tip='Guess for the minimum value of the rate gamma+') 
-        self.treeDic_settings.add_parameter('Rate_+_max', 150*1e3, 
+                                            bounds=[0,None], suffix=' us',
+                                            tip='Time to probe.') 
+
+        self.treeDic_settings.add_parameter('dt_pi_pulse_ms+1', 0.3, 
                                             type='float', step=0.1, 
-                                            bounds=[0,None], suffix=' Hz',
-                                            tip='Guess for the maximum value of the rate gamma+') 
-        self.treeDic_settings.add_parameter('Size_rate_+_axis', 150, 
-                                            type='int', step=10, 
-                                            bounds=[0,None],
-                                            tip='Number of points along the gamma+ axis for the pdf') 
-        self.treeDic_settings.add_parameter('Rate_-_min', 0.01, 
+                                            bounds=[0,None], suffix=' us',
+                                            tip='Duration of pi pulse for ms=+1(RF)') 
+        self.treeDic_settings.add_parameter('dt_pi_pulse_ms-1', 0.3, 
                                             type='float', step=0.1, 
-                                            bounds=[0,None], suffix=' Hz',
-                                            tip='Guess for the minimum value of the rate gamma-')         
-        self.treeDic_settings.add_parameter('Rate_-_max', 150*1e3, 
-                                            type='float', step=0.1, 
-                                            bounds=[0,None], suffix=' Hz',
-                                            tip='Guess for the maximum value of the rate gamma-')
-        self.treeDic_settings.add_parameter('Size_rate_-_axis', 150, 
-                                            type='int', step=10, 
-                                            bounds=[0,None],
-                                            tip='Number of points along the gamma- axis for the pdf') 
-        self.list_prior_types = ['Flat', 'Gaussian']
-        self.treeDic_settings.add_parameter('Prior_type', self.list_prior_types, 
-                                            tip='Which prior to use. Based on the bounds given for the rates.')    
+                                            bounds=[0,None], suffix=' us',
+                                            tip='Duration of pi pulse for ms=-1(RF)') 
         
         self.treeDic_settings.add_parameter('dt_laser_initiate', 3, 
                                             type='float', step=0.1, 
@@ -4045,35 +4002,17 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         self.treeDic_settings.add_parameter('DIO_pulse_modulation_ms+1', 3, 
                                             type='int', step=1, 
                                             bounds=[0,16],
-                                            tip='DIO for modulating the pulse for ms+1. AKA for sending the RF.')  
-        self.treeDic_settings.add_parameter('DIO_pulse_modulation_ms-1', 3, 
+                                            tip='DIO for modulating the pi pulse of ms=+1. AKA for sending the RF.')  
+        self.treeDic_settings.add_parameter('DIO_pulse_modulation_ms-1', 4, 
                                             type='int', step=1, 
                                             bounds=[0,16],
-                                            tip='DIO for modulating the pulse for ms-1. AKA for sending the RF.')  
-        self.treeDic_settings.add_parameter('DIO_control_frequency', 4, 
-                                            type='int', step=1, 
-                                            bounds=[0,16],
-                                            tip='DIO for controlling which frequency is sent')  
+                                            tip='DIO for modulating the pi pulse of ms=-1. AKA for sending the RF.')  
+
         self.treeDic_settings.add_parameter('DIO_sync_scope', 5, 
                                             type='int', step=1, 
                                             bounds=[-1,16],
                                             tip='DIO for synchronizing the oscilloscope. Put -1 for nothing')
-        
-        
-        # Add the Image View for the posterior. 
-        self.plot_item = egg.pyqtgraph.PlotItem()
-        # Put an image in the plot item. 
-        self.plot_image = egg.pyqtgraph.ImageView(view=self.plot_item)
-        self.place_object(self.plot_image, row=2, column = 1, 
-                          row_span=2, column_span=3, alignment=0)  
-        self.set_column_stretch(1,10)
-        self.set_row_stretch(1,10)
-        
-        # Add a dummy map 
-        x = np.linspace(1, 20, 100)
-        y = np.linspace(1, 20, 100)
-        X,Y = np.meshgrid(x,y)
-        
+
         # Make a label for showing some estimate
         self.label_estimates = egg.gui.Label('We have the best T1 tracer gui on the market.')
         self.place_object(self.label_estimates, row=2, column=4)        
@@ -4085,14 +4024,7 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
             Prepare the signal generator
             Prepare the plot
         """
-        _debug('GUIAdaptiveT1Bayes: button_prepare_experiment_clicked')   
-
-        # Initiate the prior, functions, etc. 
-        self.initiate_attributes()
-        
-        self.compute_show_estimate()
-        #Initialize the plot
-        self.update_plot_posterior()
+        _debug('GUIT1probeOneTimes: button_prepare_experiment_clicked')   
 
         # Prepare the sequence accoring to the best knowledge that we have so far. 
         self.prepare_pulse_sequence()
@@ -4100,123 +4032,31 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         # Trigger a dummy function for signaling to prepare stuffs
         self.event_prepare_experiment()
         
-    def initiate_attributes(self):
-        """
-        Initiate the attribute from the parameter choosen. 
-        Prepare the prior based on the parameters choosen. 
-        """
-        _debug('GUIAdaptiveT1Bayes: initiate_attributes') 
-        
-        # Set the prior
-        # Extract the bounds
-        self.Gp_min       = self.treeDic_settings['Rate_+_min']   #Minimum guess for gamma plus (Hz) 
-        self.Gp_max       = self.treeDic_settings['Rate_+_max']  #Maximun guess for gamma plus (Hz)    
-        self.size_axis_Gp = self.treeDic_settings['Size_rate_+_axis'] # Size of the axis gamam plus
-        self.Gm_min       = self.treeDic_settings['Rate_-_min']   #Minimum guess for gamma minus (Hz) 
-        self.Gm_max       = self.treeDic_settings['Rate_-_max']  #Maximun guess for gamma minus (Hz)  
-        self.size_axis_Gm = self.treeDic_settings['Size_rate_-_axis'] # Size of the axis gamam minus
-        #Define the axis for the prior pdf      
-        self.gp_axis = np.linspace(self.Gp_min, self.Gp_max, self.size_axis_Gp) 
-        self.gm_axis = np.linspace(self.Gm_min,self. Gm_max, self.size_axis_Gm) 
-        # Set the prior according to the type of prior
-        if self.treeDic_settings['Prior_type'] == 'Flat':
-            #Define the prior 
-            self.prior = 1+np.zeros([len(self.gm_axis), len(self.gp_axis)])      
-            # No need to normalize it for now. 
-        if self.treeDic_settings['Prior_type'] == 'Gaussian':
-            # The priore will be gaussian, with the widtdt set by the bounds
-            X,Y = np.meshgrid(self.gp_axis,self.gm_axis)
-            x0 = np.mean(self.gp_axis)
-            y0 = np.mean(self.gm_axis)
-            dx = 0.5*(self.Gp_max-self.Gp_min) # Width in the gamma+ direction
-            dy = 0.5*(self.Gm_max-self.Gm_min) # Width in the gamma- direction
-            self.prior = np.exp(-( (X-x0)*(X-x0)/dx**2 + (Y-y0)*(Y-y0)/dy**2 )) # A non-skewed gaussian
-
-        # Initiate the class for processing the protocol
-        # Define the constants
-        self.PL0      = self.treeDic_settings['PL0']
-        self.contrast = self.treeDic_settings['Contrast']
-        constants = [self.PL0, self.contrast]
-        # Define the model functions that should describe our experiment. 
-        #TODO Have these models as an input and prepare the pulse sequence accordingly.
-        f0 = protocol_model.PLModel(constants).PL00
-        fp = protocol_model.PLModel(constants).PLp0
-        fm = protocol_model.PLModel(constants).PLm0
-        model_functions = [f0, fp, fm]
-            
-        # Initiate the class. This class will contain the posterior and everything else. 
-        self.protocol_processor = protocol_bayes.Bayes3Measure(model_functions, constants)
-        self.protocol_processor.initialize(self.gp_axis, self.gm_axis, self.prior)
-        
-        # Adjust the informaton
-        self.update_information()
-
-    def update_information(self):
-        """
-        Update the information from the object
-        """
-        _debug('GUIAdaptiveT1Bayes: update_information')
-        # Extract the information so far
-        self.t_probe   = self.protocol_processor.get_t_probe()
-        self.gp_axis   = self.protocol_processor.get_gp_axis()
-        self.gm_axis   = self.protocol_processor.get_gm_axis()
-        self.posterior = self.protocol_processor.get_posterior()
-        
-        #TODO Define "get" methods for that. Or just keep it as it is ;p
-        self.Gp_guess = self.protocol_processor.Gp_guess
-        self.Gm_guess = self.protocol_processor.Gm_guess
-        self.eGp_guess = self.protocol_processor.eGp_guess
-        self.eGm_guess = self.protocol_processor.eGm_guess
-        
-        
-    def update_plot_posterior(self):
-        """
-        Update the plot of the posterior. The title should be clear lol. 
-        """    
-        _debug('GUIAdaptiveT1Bayes: update_plot_posterior')
-        
- 
-        # Set the axis 
-        # Get the scale (AKA the spacing between two neighboor points on the image)
-        self.scale_x = (self.gp_axis.max()-self.gp_axis.min())/len(self.gp_axis)*1e-3
-        self.scale_y = (self.gm_axis.max()-self.gm_axis.min())/len(self.gm_axis)*1e-3
-        
-        self.plot_item.setLabel('bottom', text='Gamma + (kHz)')
-        self.plot_item.setLabel('left'  , text='Gamma - (kHz)')      
-        
-        # Set the image
-        self.plot_image.setImage(self.posterior.T,
-                                 pos=(self.gp_axis.min(), self.gm_axis.min()),
-                                 scale =(self.scale_x, self.scale_y) )
-        # magic method for the image to fill all the space
-        self.plot_image.view.setAspectLocked(False) # Input True for having the scaling right.         
+       
         
     def prepare_pulse_sequence(self):
         """
         Prepare the pulse sequence. 
         It generates the objet to be converted into a data array. 
         """
-        _debug('GUIAdaptiveT1Bayes: prepare_pulse_sequence')
+        _debug('GUIT1probeOneTimes: prepare_pulse_sequence')
         
 
-        DIO_laser       = self.treeDic_settings['DIO_laser']
+        DIO_laser         = self.treeDic_settings['DIO_laser']
         DIO_PM_p          = self.treeDic_settings['DIO_pulse_modulation_ms+1']
         DIO_PM_m          = self.treeDic_settings['DIO_pulse_modulation_ms-1']
-        DIO_sync        = self.treeDic_settings['DIO_sync_scope']
-        DIO_control_f   = self.treeDic_settings['DIO_control_frequency']
+        DIO_sync          = self.treeDic_settings['DIO_sync_scope']
         
         dt_laser      = self.treeDic_settings['dt_laser_initiate'] # Interval of time for shining the laser
         dt_readout    = self.treeDic_settings['dt_readout']
         dt_wait_ms0_pi= self.treeDic_settings['dt_wait_after_initiate'] #How much time to wait between ms=0 and pi pulse
-        dt_pi_pulse_m1   = self.treeDic_settings['dt_pi_pulse_ms_-1'] # Duration of the pi-pulse for ms=-1
-        dt_pi_pulse_p1   = self.treeDic_settings['dt_pi_pulse_ms_+1'] # Duration of the pi-pulse for ms=+1
+        dt_pi_pulse_m1   = self.treeDic_settings['dt_pi_pulse_ms-1'] # Duration of the pi-pulse for ms=-1
+        dt_pi_pulse_p1   = self.treeDic_settings['dt_pi_pulse_ms+1'] # Duration of the pi-pulse for ms=+1
         delay_read    = self.treeDic_settings['delay_read_before_laser'] # Delay (us) that we read before shining the laser 
-        self.N_repeat_same_state = self.treeDic_settings['N_repeat_same_state']
             
-        t_probe_us = self.t_probe*1e6 # Work in us for building the sequence
+        self.t_probe = self.treeDic_settings['t_probe']
         
         dt_sync_scope = 1   # Duration of the trigger for synchronizing the scope (us)
-        dt_control_f   = 5*dt_pi_pulse_m1 # Duration of the control signal for setting the frequency
         
 
         # WE NOW BUILT THE SEQUENCE
@@ -4224,7 +4064,7 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         # initialization in ms=0 for the next measurement. 
 
         # Initiate the sequence on which we gonna construct
-        sequence = Sequence(name='T1 3 states')
+        sequence = Sequence(name='T1 3 states at single probing time')
 
         # Create a channel for the synchronization with the scope. 
         channel_sync = ChannelPulses(channel=DIO_sync, name='Sync oscilloscope')
@@ -4239,9 +4079,7 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         # Channel for the Pi-pulse initializing ms=+1 
         channel_RF_p    = ChannelPulses(channel=DIO_PM_p , name='Pi pulse ms+1')
         # Channel for the Pi-pulse initializing ms=-1 
-        channel_RF_m    = ChannelPulses(channel=DIO_PM_m , name='Pi pulse ms-1')
-        # Channel for controlling the frequency
-        channel_control_f = ChannelPulses(channel=DIO_control_f, name='Control frequency')        
+        channel_RF_m    = ChannelPulses(channel=DIO_PM_m , name='Pi pulse ms-1')      
         
         # Set the reference time
         t0 = dt_sync_scope
@@ -4250,9 +4088,8 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         channel_laser.add_pulses([t0, t0+dt_laser])
         
         # Let evolve the state
-        tref = channel_laser.get_pulses_times()[-1] + t_probe_us
+        tref = channel_laser.get_pulses_times()[-1] + self.t_probe
         
-
         # Read it. Start to read slightly a little bit before the laser is shone
         channel_read.add_pulses([tref - delay_read, tref + dt_readout])    
         
@@ -4263,18 +4100,15 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         t0 = channel_laser.get_pulses_times()[-1]
             
         # At this point, the state is ms=0
-            
         
         # Let's flip the state into ms=-1
         # Note at which time to start the RF for flipping the state
         tref_RF = t0 + dt_wait_ms0_pi
-        # Modulate the swicth for controlling the frequency
-        channel_control_f.add_pulses([tref_RF-dt_control_f/2, tref_RF+dt_control_f/2]) # Make it bigger for it to match.
-        # Send thepi-pulse
+        # Send the pi-pulse
         channel_RF_m.add_pulses([tref_RF, tref_RF + dt_pi_pulse_m1]) # Flip in ms=-1
         
         # Let evolve the state 
-        tref = channel_RF_m.get_pulses_times()[-1] + t_probe_us 
+        tref = channel_RF_m.get_pulses_times()[-1] + self.t_probe 
         # Read it. Start to read slightly a little bit before the laser is shone
         channel_read.add_pulses([tref - delay_read, tref + dt_readout])  
 
@@ -4289,26 +4123,30 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         # Let's flip the state into ms=+1
         # Note at which time to start the RF for flipping the state
         tref_RF = t0 + dt_wait_ms0_pi
-        channel_RF_p.add_pulses([tref_RF, tref_RF + dt_pi_pulse_p1]) # Flip in ms=+1
+        # Send the pi-pulse
+        channel_RF_p.add_pulses([tref_RF, tref_RF + dt_pi_pulse_p1]) # Flip in ms=-1
         # Let evolve the state 
-        tref = channel_RF_p.get_pulses_times()[-1] + t_probe_us   
+        tref = channel_RF_p.get_pulses_times()[-1] + self.t_probe   
         # Read it. Start to read slightly a little bit before the laser is shone
         channel_read.add_pulses([tref - delay_read, tref + dt_readout])  
 
         # Shine the laser for both reading and for initializing into ms=0
         channel_laser.add_pulses([tref, tref+dt_laser])          
+        
+        # Read again at the end for the reference
+        t0 = channel_laser.get_pulses_times()[-1]
+        channel_read.add_pulses([t0 - dt_readout, t0])  
 
-        # Update the reference time
-        t0 = channel_laser.get_pulses_times()[-1]                     
+
+                
                 
                 
         # Add all that masterpiece to a block
-        block = PulsePatternBlock(name='Block tprobe = %.2f us'%t_probe_us)
+        block = PulsePatternBlock(name='Block tprobe = %.2f us'%self.t_probe)
         block.add_channelEvents([channel_laser, 
                                  channel_RF_p, 
                                  channel_RF_m,
-                                 channel_read,
-                                 channel_control_f ])
+                                 channel_read])
         # Add the trigger for synchronizing the scope only on the first block
         block.add_channelEvents([channel_sync])
         
@@ -4316,22 +4154,6 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         sequence.add_block(block)             
             
         self.sequence =  sequence
-
-    def databoxplot_update(self):
-        """
-        Update the plot
-        """
-        _debug('GUIAdaptiveT1Bayes: databoxplot_update')
-        # Clear the plot
-        self.databoxplot.clear() 
-                
-        self.databoxplot['Time_(us)'] = self.t_probe_s
-        # Loop over each readout 
-        for i, count_per_readout in enumerate(self.counts_total):
-            # Create a curve
-            self.databoxplot['Total_counts_%d'%i] = count_per_readout
-        # Show it
-        self.databoxplot.plot()   
         
     def after_one_loop(self, counts, iteration, rep):
         """
@@ -4390,8 +4212,6 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
             # Increment the counts
             self.counts_total += np.array(self.counts)  
             
-        # Update the plot
-        self.databoxplot_update()
         
     def event_prepare_experiment(self): 
         """
@@ -4399,48 +4219,7 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         This is was should be done after that the pulse sequence is defined. 
         """        
         return         
-    
-    def compute_show_estimate(self):
-        """
-        Compute and show some estimate for the pulse sequence. 
-        """
-        _debug('GUIAdaptiveT1Bayes: compute_show_estimate')
-        
-        # See notebook of Michael Caouette-Mansour on July 24 2020 for details 
-        # of how the minimum time is estimated
-        
-        # Compute roughly the total time for a single sequence. 
-        # This is assuming that the dominating time are the times to probe
-        # Multiply by 3 because we do it three time, for each ms state
-        T_seq = 0
-        
-        C0 = self.PL0  # Mean count per each readout for ms=0
-        c  = self.contrast  # Contrast between the states
-        C1 = C0*(1-c) # Mean count per readout for ms=+-1
-        
-        # Compute the minimum number of readout for distinguishing the states
-        N_min = (np.sqrt(C0) + np.sqrt(C1))**2/(C0-C1)**2
-        
-        T_minimum = T_seq*N_min # Minimum elapsed time before distinguishing the states
-        
-        # It should be in us. Let's convert it in minutes
-        T_minutes = T_minimum*1e-6/60 
-        
-        # Set the text and the label
-        text =   'Assuming %0.3f count per readout on state ms=0.'%C0
-        text+= '\nAssuming %0.3f count per readout on state ms=+-1.'%C1
-        text+= '\nNote that the contrast is %0.1f percente'%c
-        text+='\nIt should take %d readout before distinguishing those states'%N_min
-        text+='\nWith the current sequence, this should take at least %0.2f minutes'%T_minutes
-        self.text_estimate = text  
-            
-        # Set the text and the label
-        text =   'Gamma_+ = %f +- %f kHz'%(self.Gp_guess*1e-3, self.eGp_guess*1e-3)
-        text+= '\nGamma_- = %f +- %f kHz'%(self.Gm_guess*1e-3, self.eGm_guess*1e-3)
-        text+= '\nT_probe = %f us'%(self.t_probe*1e6)
-        self.text_results = text
-        self.label_estimates.set_text(self.text_estimate +'\n\n' 
-                                      + self.text_results)      
+     
     
 if __name__ == '__main__':
     _fc._debug_enabled = False
@@ -4452,10 +4231,10 @@ if __name__ == '__main__':
                     "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
     resource_num = "RIO0"     
     
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
-    fpga.open_session()
-    self = GuiMainPulseSequence(fpga) 
-    self.show()
+#    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+#    fpga.open_session()
+#    self = GuiMainPulseSequence(fpga) 
+#    self.show()
 
     
 #    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
@@ -4469,6 +4248,11 @@ if __name__ == '__main__':
 #    
 #    self = GUIPulseBuilder()
 #    self.show()
+    
+    self = GUIT1probeOneTime()
+    self.show()
+#    # Show the pulse pattern
+#    GUIPulsePattern(self.sequence)       
 
 
 
