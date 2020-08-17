@@ -3912,7 +3912,8 @@ class GUIT1TimeTrace3(egg.gui.Window):
         text+='\nIt should take %d readout before distinguishing those states'%N_min
         text+='\nWith the current sequence, this should take at least %0.2f minutes'%T_minutes
         self.label_estimates.set_text(text)        
-        
+  
+      
 class GUIT1probeOneTime(egg.gui.Window):
     """
     GUI for preparing the states and let them decay until a single time.
@@ -3935,7 +3936,7 @@ class GUIT1probeOneTime(egg.gui.Window):
         Fill up the GUI
         """        
         _debug('GUIT1probeOneTime: initialize_GUI')
-        _debug('')
+        _debug('Punctuality is not just limited to arriving at a place at right time, it is also about taking actions at right time. ― Amit Kalantri')
         
         # A button for preparing stuff
         self.button_prepare_experiment = egg.gui.Button('Prepare',
