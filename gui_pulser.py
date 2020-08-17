@@ -4060,12 +4060,10 @@ class GUIT1probeOneTime(egg.gui.Window):
         dt_pi_pulse_m1   = self.treeDic_settings['dt_pi_pulse_ms_-1'] # Duration of the pi-pulse for ms=-1
         dt_pi_pulse_p1   = self.treeDic_settings['dt_pi_pulse_ms_+1'] # Duration of the pi-pulse for ms=+1
         delay_read    = self.treeDic_settings['delay_read_before_laser'] # Delay (us) that we read before shining the laser 
-        self.N_repeat_same_state = self.treeDic_settings['N_repeat_same_state']
             
-        t_probe_us = self.t_probe*1e6 # Work in us for building the sequence
+        self.t_probe = self.treeDic_settings['t_probe']
         
         dt_sync_scope = 1   # Duration of the trigger for synchronizing the scope (us)
-        dt_control_f   = 5*dt_pi_pulse_m1 # Duration of the control signal for setting the frequency
         
 
         # WE NOW BUILT THE SEQUENCE
@@ -4073,7 +4071,7 @@ class GUIT1probeOneTime(egg.gui.Window):
         # initialization in ms=0 for the next measurement. 
 
         # Initiate the sequence on which we gonna construct
-        sequence = Sequence(name='T1 3 states')
+        sequence = Sequence(name='T1 3 states at single probing time')
 
         # Create a channel for the synchronization with the scope. 
         channel_sync = ChannelPulses(channel=DIO_sync, name='Sync oscilloscope')
@@ -4260,10 +4258,10 @@ if __name__ == '__main__':
                     "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
     resource_num = "RIO0"     
     
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
-    fpga.open_session()
-    self = GuiMainPulseSequence(fpga) 
-    self.show()
+#    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+#    fpga.open_session()
+#    self = GuiMainPulseSequence(fpga) 
+#    self.show()
 
     
 #    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
@@ -4277,6 +4275,11 @@ if __name__ == '__main__':
 #    
 #    self = GUIPulseBuilder()
 #    self.show()
+    
+    self = GUIT1probeOneTime()
+    self.show()
+#    # Show the pulse pattern
+#    GUIPulsePattern(self.sequence)       
 
 
 
