@@ -2,7 +2,7 @@ Power	-20.0
 Power|expanded	True
 Frequency	3.0
 Frequency|expanded	True
-t_probe	20.0
+t_probe	0.5
 t_probe|expanded	True
 dt_pi_pulse_ms+1	0.3
 dt_pi_pulse_ms+1|expanded	True

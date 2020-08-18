@@ -39,7 +39,7 @@ class GuiMainPulseSequence(egg.gui.Window):
     """
     Main GUI for running the FPGA with pulse sequence. 
     """
-    def __init__(self, fpga, name="Best pulser of the world", size=[1200,700]): 
+    def __init__(self, fpga, name="Best pulser of the world", size=[1400,700]): 
         """
         fpga:
             "FPGA_api" object from fpga_control.py. 
@@ -141,7 +141,7 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.gui_spincontrast = GUISpinContrast()
         self.gui_T1_trace2         = GUIT1TimeTrace2()
         self.gui_T1_trace3         = GUIT1TimeTrace3()
-        self.gui_adaptiveT1_bayes  = GUIAdaptiveT1Bayes()
+        self.gui_T1_probeOneTime   = GUIT1probeOneTime()
         
         self.new_autorow()
         self.tabs1 = self.place_object(egg.gui.TabArea(autosettings_path='tabs1'),
@@ -204,10 +204,10 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.gui_T1_trace3         .event_prepare_experiment = self.prepare_T1_trace3                
 
         # Tab for the ultimate 
-        self.tab_adaptive_T1_bayes  = self.tabs1.add_tab('Ultimate adaptive T1 Bayes')
-        self.tab_adaptive_T1_bayes .place_object(self.gui_adaptiveT1_bayes, alignment=0)   
+        self.tab_T1_probeOneTime  = self.tabs1.add_tab('Probe one time')
+        self.tab_T1_probeOneTime .place_object(self.gui_T1_probeOneTime, alignment=0)   
         # Connecting the gui by overidding
-        self.gui_adaptiveT1_bayes         .event_prepare_experiment = self.prepare_adaptiveT1_bayes 
+        self.gui_T1_probeOneTime         .event_prepare_experiment = self.prepare_T1_probeOneTime
 
     def NumberBox_N_loopFPGA_changed(self):
         """
@@ -639,14 +639,15 @@ class GuiMainPulseSequence(egg.gui.Window):
         # Overird the method to be called after each loop
         self.after_one_loop = self.gui_spincontrast.after_one_loop   
 
-    def prepare_adaptiveT1_bayes(self):
+    def prepare_T1_probeOneTime(self):
         """
-        Prepare the sub GUIs and attributes for the adaptive T1 Bayes measurement. 
+        Prepare the sub GUIs and attributes for the measurement of probing at
+        a single time.
         """
-        _debug('GuiMainPulseSequence: prepare_adaptiveT1_bayes')
+        _debug('GuiMainPulseSequence: prepare_T1_probeOneTime')
         
         # Note which experiment is selected
-        self.selected_experiment = 'Adaptive T1 Bayes '
+        self.selected_experiment = 'T1 probing one time'
         # Update the label
         text = 'Experiment = ' + self.selected_experiment
         self.label_selected_experiment.set_text(text)
@@ -655,29 +656,22 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.CET_mode = False # It's gonna be set in the fpga in run_loops()
 
         # Send the sequence to the pulse builder
-        self.gui_pulse_builder.set_sequence( self.gui_adaptiveT1_bayes.sequence )
+        if self.gui_pulse_builder.sequence_has_delay:
+            # Remove the delay if there was previously
+            self.gui_pulse_builder.button_set_delays.click()
+        # Set the sequence
+        self.gui_pulse_builder.set_sequence( self.gui_T1_probeOneTime.sequence )
+        # Set the delay
+        self.gui_pulse_builder.button_set_delays.click()
         
-#        # Prepare the setting for the signal generator
-#        self.f_msm1 = self.gui_adaptiveT1_bayes .treeDic_settings['Frequency_ms_-1']
-#        self.f_msp1 = self.gui_adaptiveT1_bayes .treeDic_settings['Frequency_ms_+1']
-#        self.Nf   = 2 # We have two frequencies to probe
-#        self.P_msm1    = self.gui_adaptiveT1_bayes .treeDic_settings['Power_ms_-1']
-#        self.P_msp1    = self.gui_adaptiveT1_bayes .treeDic_settings['Power_ms_+1']
-#        # The first power/frequency will be the second in the pulse sequence,
-#        # This is because we trigger for switching at the beggining for saving time. 
-#        self.sig_gen.settings['Generate-List/f1']    = self.f_msp1*1e9 #Convert into Hz
-#        self.sig_gen.settings['Generate-List/f2']    = self.f_msm1*1e9 #Convert into Hz
-#        self.sig_gen.settings['Generate-List/P1']    = self.P_msp1
-#        self.sig_gen.settings['Generate-List/P2']    = self.P_msm1
-#        self.sig_gen.settings['Generate-List/Steps'] = self.Nf
-#        
-#        # Prepare the signal generator for the list sweep 
-#        self.sig_gen.combo_mode.set_value(index=1) # Set in List mode
-#        self.sig_gen.button_generate_list.click()
-#        self.sig_gen.button_send_list.click()
-#        # Make the instrumenbt ready for the pulse sequence
-#        # The method should set the trigger to be external, pulse modulatiion, etc. 
-#        self.sig_gen.api.prepare_for_ESR()
+        # Prepare the setting for the signal generator
+        #TODO do it !
+        
+        # Overird the method to be called after each loop
+        self.after_one_loop = self.gui_T1_probeOneTime.after_one_loop   
+
+        
+        
 
         
     def convert_sequence(self):
@@ -4013,9 +4007,14 @@ class GUIT1probeOneTime(egg.gui.Window):
                                             bounds=[-1,16],
                                             tip='DIO for synchronizing the oscilloscope. Put -1 for nothing')
 
+        # Add a Data Box plotter for the incoming data
+        self.databoxplot = egg.gui.DataboxPlot(autosettings_path='plot_probeOneTime')
+        self.place_object(self.databoxplot, row=2, column = 1, row_span=2) 
+        self.databoxplot.button_multi.set_value(False) # Make all on the same plot
+        
         # Make a label for showing some estimate
-        self.label_estimates = egg.gui.Label('We have the best T1 tracer gui on the market.')
-        self.place_object(self.label_estimates, row=2, column=4)        
+        self.label_estimates = egg.gui.Label('We have the best T1 prober on the market.')
+        self.place_object(self.label_estimates, row=2, column=2)        
 
     def button_prepare_experiment_clicked(self):
         """
@@ -4041,7 +4040,6 @@ class GUIT1probeOneTime(egg.gui.Window):
         """
         _debug('GUIT1probeOneTimes: prepare_pulse_sequence')
         
-
         DIO_laser         = self.treeDic_settings['DIO_laser']
         DIO_PM_p          = self.treeDic_settings['DIO_pulse_modulation_ms+1']
         DIO_PM_m          = self.treeDic_settings['DIO_pulse_modulation_ms-1']
@@ -4058,7 +4056,6 @@ class GUIT1probeOneTime(egg.gui.Window):
         
         dt_sync_scope = 1   # Duration of the trigger for synchronizing the scope (us)
         
-
         # WE NOW BUILT THE SEQUENCE
         # To be efficient, we gonna use the laser for reading and as an 
         # initialization in ms=0 for the next measurement. 
@@ -4154,6 +4151,26 @@ class GUIT1probeOneTime(egg.gui.Window):
         sequence.add_block(block)             
             
         self.sequence =  sequence
+
+    def databoxplot_update(self):
+        """
+        Update the plot
+        """
+        _debug('GUIT1probeOneTimes: databoxplot_update')
+        
+        
+        # Clear the plot
+        self.databoxplot.clear() 
+        
+        # Feed the databox plot with the data
+        self.databoxplot['ms0']  = self.count_per_iter_ms0_s
+        self.databoxplot['ms-1'] = self.count_per_iter_msm1_s
+        self.databoxplot['ms+1'] = self.count_per_iter_msp1_s
+        self.databoxplot['ref']  = self.count_per_iter_ref_s
+        
+            
+        # Show it
+        self.databoxplot.plot()   
         
     def after_one_loop(self, counts, iteration, rep):
         """
@@ -4169,49 +4186,56 @@ class GUIT1probeOneTime(egg.gui.Window):
         rep:
             Number of repetition of the sequence into the fpga instruction
             """
-        _debug('GUIAdaptiveT1Bayes: after_one_loop')
+        _debug('GUIT1probeOneTimes: after_one_loop')
         
         # Get the counts per readout per block
         self.count_processor = _fc.ProcessFPGACounts(counts)
         
-        # Since we repeated the measurements for each state, many counts
-        # refer to the same state. Therefore we need to split this. 
+        # We only have one block we 4 readout in it. 
         
         # Get the array of counts 
-        self.counts_per_block_s =  self.count_processor.get_sum_count_per_block(rep, self.nb_block)
+        self.counts_per_block_s =  self.count_processor.get_sum_count_per_block(rep, 1)
         
-        # For each block, we gonna have to sum up each batch of measurement. 
-        self.count_vs_block_ms0  = np.zeros(self.nb_block) # Store the total count for each block
-        self.count_vs_block_msm1 = np.zeros(self.nb_block) # Store the total count for each block
-        self.count_vs_block_msp1 = np.zeros(self.nb_block) # Store the total count for each block
-        for i, counts_per_block in enumerate(self.counts_per_block_s):
-            # Let's decompose each block for which measurement it correspond to
-            # And sum each batch of measurement. 
-            self.count_ms0  = np.sum( counts_per_block[                         0 :   self.N_repeat_same_state] )
-            self.count_msm1 = np.sum( counts_per_block[  self.N_repeat_same_state : 2*self.N_repeat_same_state] )
-            self.count_msp1 = np.sum( counts_per_block[2*self.N_repeat_same_state : 3*self.N_repeat_same_state] )
-            # Note the total count for this block
-            self.count_vs_block_ms0[i]  = self.count_ms0
-            self.count_vs_block_msm1[i] = self.count_msm1
-            self.count_vs_block_msp1[i] = self.count_msp1
-            
-        # Structure the counts for the rest of the code
-        self.counts = [self.count_vs_block_ms0,
-                       self.count_vs_block_msm1,
-                       self.count_vs_block_msp1]
-            
-
+        # Get the number of counts for each measurement
+        self.counts_ms0  = self.counts_per_block_s[0][0]
+        self.counts_msm1 = self.counts_per_block_s[0][1]
+        self.counts_msp1 = self.counts_per_block_s[0][2]
+        self.counts_ref  = self.counts_per_block_s[0][3]
         
-
-#        print(self.counts)
         # If its the first iteration
         if iteration == 0:
-            # Get the count and the correct shape for the array
-            self.counts_total = np.array(self.counts)  
+            # Note the total number of readout for each state
+            self.total_nb_readout = rep
+            # Get the summed count per iteration
+            self.count_per_iter_ms0_s  = [self.counts_ms0 ]
+            self.count_per_iter_msm1_s = [self.counts_msm1]
+            self.count_per_iter_msp1_s = [self.counts_msp1]
+            self.count_per_iter_ref_s  = [self.counts_ref ]
         else:
-            # Increment the counts
-            self.counts_total += np.array(self.counts)  
+            # Note the total number of readout for each state
+            self.total_nb_readout += rep
+            # Appened the summed count per iteration
+            self.count_per_iter_ms0_s .append( self.counts_ms0)
+            self.count_per_iter_msm1_s.append( self.counts_msm1)
+            self.count_per_iter_msp1_s.append( self.counts_msp1)
+            self.count_per_iter_ref_s .append( self.counts_ref)
+        
+        # Update the plot
+        self.databoxplot_update()
             
+        # Update the label
+        self.mean_count_per_readout_ms0  = np.sum(self.count_per_iter_ms0_s)/rep/iteration
+        self.mean_count_per_readout_msm1 = np.sum(self.count_per_iter_msm1_s)/rep/iteration
+        self.mean_count_per_readout_msp1 = np.sum(self.count_per_iter_msp1_s)/rep/iteration
+        self.mean_count_per_readout_ref  = np.sum(self.count_per_iter_ref_s)/rep/iteration
+        
+        text = (  'Mean count per readout'+
+                '\nms0  : %f'%self.mean_count_per_readout_ms0 +
+                '\nms-1 : %f'%self.mean_count_per_readout_msm1 +
+                '\nms+1 : %f'%self.mean_count_per_readout_msp1 +
+                '\nref  : %f'%self.mean_count_per_readout_ref)
+        self.label_estimates.set_text(text)
+        
         
     def event_prepare_experiment(self): 
         """
@@ -4231,10 +4255,10 @@ if __name__ == '__main__':
                     "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
     resource_num = "RIO0"     
     
-#    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
-#    fpga.open_session()
-#    self = GuiMainPulseSequence(fpga) 
-#    self.show()
+    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+    fpga.open_session()
+    self = GuiMainPulseSequence(fpga) 
+    self.show()
 
     
 #    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
@@ -4249,8 +4273,8 @@ if __name__ == '__main__':
 #    self = GUIPulseBuilder()
 #    self.show()
     
-    self = GUIT1probeOneTime()
-    self.show()
+#    self = GUIT1probeOneTime()
+#    self.show()
 #    # Show the pulse pattern
 #    GUIPulsePattern(self.sequence)       
 
