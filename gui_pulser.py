@@ -4007,9 +4007,14 @@ class GUIT1probeOneTime(egg.gui.Window):
                                             bounds=[-1,16],
                                             tip='DIO for synchronizing the oscilloscope. Put -1 for nothing')
 
+        # Add a Data Box plotter for the incoming data
+        self.databoxplot = egg.gui.DataboxPlot(autosettings_path='plot_probeOneTime')
+        self.place_object(self.databoxplot, row=2, column = 1, row_span=2) 
+        self.databoxplot.button_multi.set_value(False) # Make all on the same plot
+        
         # Make a label for showing some estimate
-        self.label_estimates = egg.gui.Label('We have the best T1 tracer gui on the market.')
-        self.place_object(self.label_estimates, row=2, column=4)        
+        self.label_estimates = egg.gui.Label('We have the best T1 prober on the market.')
+        self.place_object(self.label_estimates, row=2, column=2)        
 
     def button_prepare_experiment_clicked(self):
         """
@@ -4146,6 +4151,26 @@ class GUIT1probeOneTime(egg.gui.Window):
         sequence.add_block(block)             
             
         self.sequence =  sequence
+
+    def databoxplot_update(self):
+        """
+        Update the plot
+        """
+        _debug('GUIT1probeOneTimes: databoxplot_update')
+        
+        
+        # Clear the plot
+        self.databoxplot.clear() 
+        
+        # Feed the databox plot with the data
+        self.databoxplot['ms0']  = self.count_per_iter_ms0_s
+        self.databoxplot['ms-1'] = self.count_per_iter_msm1_s
+        self.databoxplot['ms+1'] = self.count_per_iter_msp1_s
+        self.databoxplot['ref']  = self.count_per_iter_ref_s
+        
+            
+        # Show it
+        self.databoxplot.plot()   
         
     def after_one_loop(self, counts, iteration, rep):
         """
@@ -4179,23 +4204,38 @@ class GUIT1probeOneTime(egg.gui.Window):
         
         # If its the first iteration
         if iteration == 0:
-            # Get the count and the correct shape for the array
-            self.counts_total_ms0  = self.counts_ms0
-            self.counts_total_msm1 = self.counts_msm1
-            self.counts_total_msp1 = self.counts_msp1
-            self.counts_total_ref  = self.counts_ref
+            # Note the total number of readout for each state
+            self.total_nb_readout = rep
+            # Get the summed count per iteration
+            self.count_per_iter_ms0_s  = [self.counts_ms0 ]
+            self.count_per_iter_msm1_s = [self.counts_msm1]
+            self.count_per_iter_msp1_s = [self.counts_msp1]
+            self.count_per_iter_ref_s  = [self.counts_ref ]
         else:
-            # Increment the counts
-            self.counts_total_ms0  += self.counts_ms0
-            self.counts_total_msm1 += self.counts_msm1
-            self.counts_total_msp1 += self.counts_msp1
-            self.counts_total_ref  += self.counts_ref 
+            # Note the total number of readout for each state
+            self.total_nb_readout += rep
+            # Appened the summed count per iteration
+            self.count_per_iter_ms0_s .append( self.counts_ms0)
+            self.count_per_iter_msm1_s.append( self.counts_msm1)
+            self.count_per_iter_msp1_s.append( self.counts_msp1)
+            self.count_per_iter_ref_s .append( self.counts_ref)
         
-        print(self.counts_total_ms0)
-        print(self.counts_total_msm1)
-        print(self.counts_total_msp1)
-        print(self.counts_total_ref)
+        # Update the plot
+        self.databoxplot_update()
             
+        # Update the label
+        self.mean_count_per_readout_ms0  = np.sum(self.count_per_iter_ms0_s)/rep/iteration
+        self.mean_count_per_readout_msm1 = np.sum(self.count_per_iter_msm1_s)/rep/iteration
+        self.mean_count_per_readout_msp1 = np.sum(self.count_per_iter_msp1_s)/rep/iteration
+        self.mean_count_per_readout_ref  = np.sum(self.count_per_iter_ref_s)/rep/iteration
+        
+        text = (  'Mean count per readout'+
+                '\nms0  : %f'%self.mean_count_per_readout_ms0 +
+                '\nms-1 : %f'%self.mean_count_per_readout_msm1 +
+                '\nms+1 : %f'%self.mean_count_per_readout_msp1 +
+                '\nref  : %f'%self.mean_count_per_readout_ref)
+        self.label_estimates.set_text(text)
+        
         
     def event_prepare_experiment(self): 
         """
