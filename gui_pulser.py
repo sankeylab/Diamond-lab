@@ -4041,7 +4041,6 @@ class GUIT1probeOneTime(egg.gui.Window):
         """
         _debug('GUIT1probeOneTimes: prepare_pulse_sequence')
         
-
         DIO_laser         = self.treeDic_settings['DIO_laser']
         DIO_PM_p          = self.treeDic_settings['DIO_pulse_modulation_ms+1']
         DIO_PM_m          = self.treeDic_settings['DIO_pulse_modulation_ms-1']
@@ -4058,7 +4057,6 @@ class GUIT1probeOneTime(egg.gui.Window):
         
         dt_sync_scope = 1   # Duration of the trigger for synchronizing the scope (us)
         
-
         # WE NOW BUILT THE SEQUENCE
         # To be efficient, we gonna use the laser for reading and as an 
         # initialization in ms=0 for the next measurement. 
@@ -4169,7 +4167,7 @@ class GUIT1probeOneTime(egg.gui.Window):
         rep:
             Number of repetition of the sequence into the fpga instruction
             """
-        _debug('GUIAdaptiveT1Bayes: after_one_loop')
+        _debug('GUIT1probeOneTimes: after_one_loop')
         
         # Get the counts per readout per block
         self.count_processor = _fc.ProcessFPGACounts(counts)
@@ -4180,30 +4178,6 @@ class GUIT1probeOneTime(egg.gui.Window):
         # Get the array of counts 
         self.counts_per_block_s =  self.count_processor.get_sum_count_per_block(rep, self.nb_block)
         
-        # For each block, we gonna have to sum up each batch of measurement. 
-        self.count_vs_block_ms0  = np.zeros(self.nb_block) # Store the total count for each block
-        self.count_vs_block_msm1 = np.zeros(self.nb_block) # Store the total count for each block
-        self.count_vs_block_msp1 = np.zeros(self.nb_block) # Store the total count for each block
-        for i, counts_per_block in enumerate(self.counts_per_block_s):
-            # Let's decompose each block for which measurement it correspond to
-            # And sum each batch of measurement. 
-            self.count_ms0  = np.sum( counts_per_block[                         0 :   self.N_repeat_same_state] )
-            self.count_msm1 = np.sum( counts_per_block[  self.N_repeat_same_state : 2*self.N_repeat_same_state] )
-            self.count_msp1 = np.sum( counts_per_block[2*self.N_repeat_same_state : 3*self.N_repeat_same_state] )
-            # Note the total count for this block
-            self.count_vs_block_ms0[i]  = self.count_ms0
-            self.count_vs_block_msm1[i] = self.count_msm1
-            self.count_vs_block_msp1[i] = self.count_msp1
-            
-        # Structure the counts for the rest of the code
-        self.counts = [self.count_vs_block_ms0,
-                       self.count_vs_block_msm1,
-                       self.count_vs_block_msp1]
-            
-
-        
-
-#        print(self.counts)
         # If its the first iteration
         if iteration == 0:
             # Get the count and the correct shape for the array
