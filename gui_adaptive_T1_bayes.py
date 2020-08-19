@@ -24,14 +24,19 @@ def _debug(*a):
         print(', '.join(s))
         
 
-class GUIT1probeOneTime(egg.gui.Window):
+class GUIAdaptiveT1Bayes(egg.gui.Window):
     """
-    GUI for preparing the states and let them decay until a single time.
+    GUI for managing the adaptive protocole for T1 measurement. Using 
+    Bayesian inference to adapt the best time to probe. 
     """   
     
-    def __init__(self, name="Single probe T1", size=[1000,500]): 
+    def __init__(self, gui_pulser, name="Super adaptive Bayes Bad Ass", size=[1000,500]): 
         """
         Initialize
+        
+        gui_pulser:
+            Object GuiMainPulseSequence in gui_pulser. 
+            This will allow to control the pulse sequence. 
         """    
         _debug('GUIAdaptiveT1Bayes: __init__')
         _debug('Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it. – The Lion King')
@@ -42,15 +47,45 @@ class GUIT1probeOneTime(egg.gui.Window):
         # Initialise the GUI
         self.initialize_GUI()
         
+
+    def button_run_clicked(self):
+        """
+        Run the protocole !
+        """
+        _debug('GUIAdaptiveT1Bayes: button_run_clicked')
+        
+        # Make the attribute to match with the settings
+        self.initiate_attributes()
+        
+    def button_save_clicked(self):
+        """
+        Save everything !
+        """
+        _debug('GUIAdaptiveT1Bayes: button_save_clicked')
+        print('Implement me !!')
+        
+        
     def initialize_GUI(self):
         """
         Fill up the GUI
         """      
         _debug('GUIAdaptiveT1Bayes: initialize_GUI')
+
+        # A button for preparing stuff
+        self.button_run = egg.gui.Button('Start', tip='Launch the experiment')
+        self.button_run.set_style('background-color: rgb(0, 200, 0);')
+        self.place_object(self.button_run, row=0, column=0)
+        self.connect(self.button_run.signal_clicked, self.button_run_clicked)
+
+        # Place a buttong for saving the data
+        self.button_save = self.place_object(egg.gui.Button(), row=0, column=1,
+                                             alignment=1)
+        self.button_save.set_text('Save :D :D :D')
+        self.connect(self.button_save.signal_clicked, self.button_save_clicked)  
         
         # tree dictionnarry for the settings
-        self.treeDic_settings = egg.gui.TreeDictionary(autosettings_path='setting_T1_singleTime')
-        self.place_object(self.treeDic_settings, row=2, column=0)
+        self.treeDic_settings = egg.gui.TreeDictionary(autosettings_path='setting_adaptiveT1Bayes')
+        self.place_object(self.treeDic_settings, row=1, column=0)
         self.treeDic_settings.add_parameter('Rate_+_min', 0.01, 
                                             type='float', step=0.1, 
                                             bounds=[0,None], suffix=' Hz',
@@ -93,7 +128,7 @@ class GUIT1probeOneTime(egg.gui.Window):
         self.plot_item = egg.pyqtgraph.PlotItem()
         # Put an image in the plot item. 
         self.plot_image = egg.pyqtgraph.ImageView(view=self.plot_item)
-        self.place_object(self.plot_image, row=2, column = 1, 
+        self.place_object(self.plot_image, row=1, column = 1, 
                           row_span=2, column_span=3, alignment=0)  
         self.set_column_stretch(1,10)
         self.set_row_stretch(1,10)
@@ -194,6 +229,112 @@ class GUIT1probeOneTime(egg.gui.Window):
                                  scale =(self.scale_x, self.scale_y) )
         # magic method for the image to fill all the space
         self.plot_image.view.setAspectLocked(False) # Input True for having the scaling right.              
+    
+
+
+class Bayes3Measure():
+    """
+    Bayes inference for 3 measure
+    
+    Take the data and update the posterior
+     
+    """
+
+    def __init__(self, model_functions, constants):
+        """
+        model_functions = [f0, fp, fm]
+        constants = [PL0, contrast]
+        
+        f0,fp,fm:
+            Function with signature (t,Gp,Gm) which gonna define the PL for the 
+            three type of measurement. Those are amoung the 9 in the model. 
+
+        PL0:
+            Mean photocounts from the ms=0 state. 
+        contrast:
+            Contrast in photoluminescence from the ms=+-1 state. This is 
+            defined such that the photoluminescence coming from ms=+-1 is 
+            PL0*(1-contrast)     
+            
+        """
+        _debug('Bayes3Measure: __init__')
+        _debug('Your limitation-it’s only your imagination.')
+       
+        self.model_functions = model_functions        
+        self.f0 = model_functions[0]
+        self.fp = model_functions[1]
+        self.fm = model_functions[2]
+        
+        # For now the constants are just used for taking measurement, because
+        # they are not taken into account 
+        self.constants = constants
+        
+    def update_post(self):
+        """
+        Update the posterior. 
+        Compute it from the like-lihood and the prior, than normalize it
+        """
+        _debug('Bayes3Measure: update_post' )
+            
+        #Get the posterior from the like-lihood and the prior
+        self.Ppost  = np.exp(-self.L)*self.prior
+        self.Ppost /= self.integral2D(self.gp_axis, self.gm_axis, self.Ppost) #Normalize 
+        if _debug_enabled:
+            #Put this debug into an extra of, because the extra calculation of the volume might be expensive 
+            _debug('Volume of posterior (its not fun)  = ', self.integral2D(self.gp_axis, self.gm_axis, self.Ppost ) )    
+
+    def get_likelihood(self, exp0, expp, expm, diffp, diffm):   
+        """
+        Update the likehihood, from the knowledge of the cumulated measurement
+        
+        exp0:
+            Expectation array for f0. The array is for each element of the domain. 
+        expp:
+            Expectation array for fp. The array is for each element of the domain. 
+        expm:
+            Expectation array for fm. The array is for each element of the domain.   
+            
+            
+            
+        """
+        _debug('Bayes3Measure: get_likelihood_3measure')
+        
+        # Precompute arrays for simplification
+        ZZZ = expp*expm +exp0*(expp+expm)
+        
+        A = (exp0 + expp + expm +2*(diffp+diffm) 
+            + diffp*diffp/expp + diffm*diffm/expm )
+        
+        B = (expp*diffm + expm*(3*expp+diffp))**2       
+        C = exp0/(expp*expm*ZZZ)
+        # THE like-lihood
+        L = 0.5*(np.log(ZZZ) + A - B*C )
+        
+        return L     
+
+
+
+    
+if __name__=="__main__":
+    _debug_enabled = True
+    
+     # Create the fpga api
+    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
+                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
+    resource_num = "RIO0"     
+    
+    import fpga_control as _fc
+    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
+    fpga_fake.open_session()
+    
+    import gui_pulser
+    gui = gui_pulser.GuiMainPulseSequence(fpga_fake)
+    
+    
+    self = GUIAdaptiveT1Bayes(gui)
+    self.show()
+    
+    
     
     
     

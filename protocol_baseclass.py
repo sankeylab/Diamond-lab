@@ -227,10 +227,6 @@ class Protocol():
 
 
 
-
-
-
-
 if __name__ == '__main__': 
     _debug_enabled = True
     # Load the model
