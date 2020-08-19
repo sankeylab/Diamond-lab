@@ -1110,16 +1110,16 @@ if __name__ == '__main__':
     from traceback import print_exception as _p
     _debug_enabled = True
     # Load the model
-    import model
+    import protocol_model
     # Define the constants
     PL0      = 0.04
     contrast = 0.2
     constants = [PL0, contrast]
     
     # Define the model that we want to check
-    f0 = model.PLModel(constants).PLpm
-    fp = model.PLModel(constants).PLpp
-    fm = model.PLModel(constants).PLmm
+    f0 = protocol_model.PLModel(constants).PLpm
+    fp = protocol_model.PLModel(constants).PLpp
+    fm = protocol_model.PLModel(constants).PLmm
     model_functions = [f0, fp, fm]
     
     #Load information from the experiment
