@@ -41,25 +41,7 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         
         # Initialise the GUI
         self.initialize_GUI()
-        
-
-    def button_run_clicked(self):
-        """
-        Run the protocole !
-        """
-        _debug('GUIAdaptiveT1Bayes: button_run_clicked')
-        
-        # Make the attribute to match with the settings
-        self.initiate_attributes()
-        
-    def button_save_clicked(self):
-        """
-        Save everything !
-        """
-        _debug('GUIAdaptiveT1Bayes: button_save_clicked')
-        print('Implement me !!')
-        
-        
+               
     def initialize_GUI(self):
         """
         Fill up the GUI
@@ -178,9 +160,30 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         fm = PLModel(constants).PLm0
         model_functions = [f0, fp, fm]
             
-        # Initiate the class. This class will contain the posterior and everything else. 
+        # Initiate the class for Bayes inference.
         self.bayes = Bayes3Measure(model_functions, self.prior, 
                                    self.gp_axis, self.gm_axis)
+
+    def button_run_clicked(self):
+        """
+        Run the protocole !
+        """
+        _debug('GUIAdaptiveT1Bayes: button_run_clicked')
+        
+        # Make the attribute to match with the settings
+        self.initiate_attributes()
+        
+        
+        # Fake a measurement
+        self.measured_f0 = 3
+        
+        
+    def button_save_clicked(self):
+        """
+        Save everything !
+        """
+        _debug('GUIAdaptiveT1Bayes: button_save_clicked')
+        print('Implement me !!')
         
     def update_plot_posterior(self):
         """
@@ -572,25 +575,51 @@ class PLModel():
 if __name__=="__main__":
     _debug_enabled = True
     
-#     # Create the fpga api
-#    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
-#                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
-#    resource_num = "RIO0"     
-#    
-#    import fpga_control as _fc
-#    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
-#    fpga_fake.open_session()
-#    
-#    import gui_pulser
-#    gui = gui_pulser.GuiMainPulseSequence(fpga_fake)
-#    
-#    
-#    self = GUIAdaptiveT1Bayes(gui)
-#    self.show()
-#    
+     # Create the fpga api
+    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
+                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
+    resource_num = "RIO0"     
+    
+    import fpga_control as _fc
+    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
+    fpga_fake.open_session()
+    
+    import gui_pulser
+    gui = gui_pulser.GuiMainPulseSequence(fpga_fake)
+    
+    
+    self = GUIAdaptiveT1Bayes(gui)
+    self.show()
+    
     
     # Test the Bayes object
+    # Define the constants
+    PL0      = 0.04
+    contrast = 0.2
+    constants = [PL0, contrast]
+    # Define the model that we want to check
+    f0 = PLModel(constants).PLpm
+    fp = PLModel(constants).PLpp
+    fm = PLModel(constants).PLmm
+    model_functions = [f0, fp, fm]
     
+    Gp_true, Gm_true = 15000, 32000 # Fake rates
+    
+    #Define some conditions for the simulation
+    # Times to probes
+    t_probe = 0.4/(Gp_true*1e3)
+    # Prior
+    Gp_min = 0.1*1e3   #Minimum guess for gamma plus (Hz) 
+    Gp_max = 200*1e3  #Maximun guess for gamma plus (Hz)        
+    Gm_min = 0.01*1e3   #Minimum guess for gamma minus (Hz) 
+    Gm_max = 150*1e3  #Maximun guess for gamma minus (Hz)  
+    #Define the axis for the prior pdf      
+    gp_axis = np.linspace(Gp_min, Gp_max, 150) 
+    gm_axis = np.linspace(Gm_min, Gm_max, 210) 
+    #Define the prior 
+    prior = 1+np.zeros([len(gm_axis), len(gp_axis)])    
+    
+    self = Bayes3Measure(model_functions, prior,gp_axis, gm_axis)
     
     
     
