@@ -46,7 +46,7 @@ class signal_generator_api(_mp.visa_tools.visa_api_base):
         elif 'SMB100A' in self.idn:
             _debug('signal_generator_api.__init__() I choose you smb100a')
             self._api = smb100a_api()  
-        elif 'GPIB0::28' in self.idn:
+        elif 'SMIQ03B' in self.idn:
             _debug('signal_generator_api.__init__() I choose you simq03b')
             self._api = simq03b_api()
             
@@ -1465,8 +1465,8 @@ class GUISignalGenerator(_mp.visa_tools.visa_gui_base):
         
         self.settings.add_parameter('Generate-List/f1',    1.0e9, bounds=(1.0,20e9), siPrefix=True, suffix='Hz', dec=True)
         self.settings.add_parameter('Generate-List/f2',   10.0e9, bounds=(1.0,20e9), siPrefix=True, suffix='Hz', dec=True)
-        self.settings.add_parameter('Generate-List/P1',      -30, bounds=(-30,25),   suffix=' dBm')
-        self.settings.add_parameter('Generate-List/P2',      -30, bounds=(-30,25),   suffix=' dBm')
+        self.settings.add_parameter('Generate-List/P1',      -30, bounds=(-30,25),   suffix='dBm', type='float')
+        self.settings.add_parameter('Generate-List/P2',      -30, bounds=(-30,25),   suffix='dBm', type='float')
         self.settings.add_parameter('Generate-List/Steps',   100, bounds=(2, 10000))
         self.settings.add_parameter('Generate-List/Direction', 0, values=['1->2', '2->1'])
         self.settings.add_parameter('Generate-List/Mode',      0, values=['Linear', 'Log'])
