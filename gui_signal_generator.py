@@ -1011,7 +1011,7 @@ class anapico_api(_mp.visa_tools.visa_api_base):
 
 class simq03b_api(_mp.visa_tools.visa_api_base):    
     """
-    API for SMA100B. This object just defines the functions to be used by the
+    API for SMIQ03B. This object just defines the functions to be used by the
     base class signal_generator_api.
     """
     def __init__(self): return
