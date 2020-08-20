@@ -1068,12 +1068,12 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         
         #First choose a list, otherwise SMA100B is mad
         #To know the available list, the query is 'SOUR1:LIST:CAT?'
-        self.write('SOUR1:LIST:SEL "/var/user/list1.lsw"') 
+        self.write('SOUR:LIST:SEL "/var/user/list1.lsw"') 
          
         #Prepare the strings for the list command
-        str_freq = 'SOUR1:LIST:FREQ ' + str(frequencies[0]) #String for the frequency list command
-        str_pow = 'SOUR1:LIST:POW ' + str(powers[0]) #String for the power list command
-        str_dwell = 'SOUR1:LIST:DWEL:LIST '+str(dwell) #String for the dwell list command
+        str_freq = 'SOUR:LIST:FREQ ' + str(frequencies[0]) #String for the frequency list command
+        str_pow = 'SOUR:LIST:POW ' + str(powers[0]) #String for the power list command
+        str_dwell = 'SOUR:LIST:DWEL:LIST '+str(dwell) #String for the dwell list command
         for i in range(1,len(frequencies)):
             str_freq += ', ' + str(frequencies[i])
             str_pow += ', ' + str(powers[i])
@@ -1107,10 +1107,10 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
             
             self.write('OUTP1:STAT ON') #Somehow the SMA100B wants the RF to be ON for switching into list mode.
             self.write('SOUR1:LIST:MODE STEP') #Make Step mode in order to not automatically sweep all the frequencies
-            self.write('SOURce1:FREQuency:MODE LIST')
+            self.write('SOURce:FREQuency:MODE LIST')
         else:
             #CW and FIXed are synonyms for SMA100B
-            self.write('SOURce1:FREQuency:MODE CW')
+            self.write('SOURce:FREQuency:MODE CW')
     
     def get_mode(self):
         """
@@ -1202,7 +1202,7 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         _debug('simq03b_api.set_power')
         
-        self.write("SOURce1:POWer:POWer "+str(dbm))
+        self.write("POWer "+str(dbm))
     
     def get_power(self):
         """
@@ -1220,7 +1220,7 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         _debug('simq03b_api.get_list_powers')
         
-        s = self.query('SOUR1:LIST:POW?')
+        s = self.query('SOUR:LIST:POW?')
         if s == None: return None
         a = []
         n = 0
@@ -1238,7 +1238,7 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         _debug('simq03b_api.get_list_frequencies')
         
-        s = self.query('SOUR1:LIST:FREQ?')
+        s = self.query('SOUR:LIST:FREQ?')
         if s == None: return None
         a = []
         n = 0
