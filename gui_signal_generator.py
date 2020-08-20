@@ -1020,7 +1020,7 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Resets the device to factory defaults (RF off).
         """
-        _debug('api.reset()')
+        _debug('simq03b_api.reset')
         self.write('*RST')
         self.query('*IDN?') # Pauses operation until fully reset?
     
@@ -1043,7 +1043,7 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         delay=0
             How long to delay after triggering the next step.
         """
-        _debug('api.send_list()')
+        _debug('simq03b_api.send_list')
         
         # Handle integers or lists for either frequencies or powers
         if not _s.fun.is_iterable(frequencies): frequencies = [frequencies]
@@ -1097,7 +1097,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         mode='List'
             Set to 'Fixed' for fixed mode.
         """
-    
+        _debug('simq03b_api.set_mode')
+        
         #If we choose list mode    
         if mode.lower() == 'list':
             #First choose a list if there was no, otherwise SMA100B is mad
@@ -1115,6 +1116,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Returns 'Fixed' or 'List' depending on the device mode.
         """
+        _debug('simq03b_api.get_mode')
+        
         s = self.query('FREQ:MODE?')
         if s == None: return None
         
@@ -1135,6 +1138,7 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         n=0
             0-referenced index.
         """
+        _debug('simq03b_api.set_list_index')
         #We have to be in step mode for being able to set the list index
         self.write('SOUR1:LIST:MODE STEP') #Have to be in STEP mode in order to select the index
         self.write('SOUR1:LIST:IND '+ str(int(n)) ) 
@@ -1143,6 +1147,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Gets the current list index.
         """
+        _debug('simq03b_api.get_list_index')
+        
         s = self.query('LIST:IND?')
         return int(s)
     
@@ -1150,6 +1156,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Turns the output on or off.
         """
+        _debug('simq03b_api.set_output')
+        
         #Note that, for SMA, switiching off the output set the automatically the mode to Fixed.... !!
         if on: self.write("OUTP1:STAT ON")
         else:  self.write("OUTP1:STAT OFF")
@@ -1159,6 +1167,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Returns 0 or 1 based on the RF output state.
         """
+        _debug('simq03b_api.get_output')
+        
         x = self.query('OUTP1:STAT?')
         if x == None: return None
         return int(x)
@@ -1172,12 +1182,16 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         f=1e9
             Frequency (Hz)
         """
+        _debug('simq03b_api.set_frequency')
+        
         self.write('SOUR:FREQ:CW '+str(f))
         
     def get_frequency(self):
         """ 
         Returns the current frequency (Hz).
         """
+        _debug('simq03b_api.get_frequency')
+        
         x = self.query('SOUR:FREQ:CW?')
         if x == None: return None
         return float(x)
@@ -1186,13 +1200,17 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Sets the output power to the specified value (dBm).
         """
+        _debug('simq03b_api.set_power')
+        
         self.write("SOURce1:POWer:POWer "+str(dbm))
     
     def get_power(self):
         """
         Returns the current power level (dBm).
         """
-        x = self.query('SOURce1:POWer:POWer?')
+        _debug('simq03b_api.get_power')
+        
+        x = self.query('POWer?')
         if x == None: return None
         return float(x)
     
@@ -1200,6 +1218,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Gets the list of powers.
         """
+        _debug('simq03b_api.get_list_powers')
+        
         s = self.query('SOUR1:LIST:POW?')
         if s == None: return None
         a = []
@@ -1216,6 +1236,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Gets the list of frequencies.
         """
+        _debug('simq03b_api.get_list_frequencies')
+        
         s = self.query('SOUR1:LIST:FREQ?')
         if s == None: return None
         a = []
@@ -1232,6 +1254,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Returns the size of the list sweep.
         """
+        _debug('simq03b_api.get_list_length')
+        
         s = self.query('SOUR1:LIST:FREQ:POIN?')
         if s == None: return None
         return int(s)
