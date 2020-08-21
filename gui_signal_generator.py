@@ -1024,7 +1024,7 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         self.write('*RST')
         self.query('*IDN?') # Pauses operation until fully reset?
     
-    def send_list(self, frequencies=[1e9,2e9,3e9,4e9], powers=[-10,-5,-2,0], dwell=1000, delay=0):
+    def send_list(self, frequencies=[1e9,2e9,3e9,4e9], powers=[-10,-5,-2,0], dwell=0.01, delay=0):
         """
         Sends the specified list values.
         
@@ -1036,8 +1036,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         powers=[0,0,0,0]
             List of power values (dBm) to touch.
         
-        dwell=0
-            In immediate mode for the list sweep, this is how long the generator
+        dwell=0 
+            (IN second!) In immediate mode for the list sweep, this is how long the generator
             will dwell on a given step.
         
         delay=0
@@ -1050,8 +1050,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         if not _s.fun.is_iterable(powers):      powers      = [powers]
         
         # Handle numpy arrays
-        if not type(frequencies) == 'list': frequencies = list(frequencies)
-        if not type(powers)      == 'list': powers      = list(powers)
+        if not type(frequencies) == list: frequencies = list(frequencies)
+        if not type(powers)      == list: powers      = list(powers)
         
         # Handle length-1 arrays:
         if len(frequencies) == 1: frequencies = frequencies*len(powers)
@@ -1066,22 +1066,30 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         #So I track the initial mode to put it back at the end. 
         initial_mode = self.get_mode()
         
-        #First choose a list, otherwise SMA100B is mad
+        # Let's choose a list. 
         #To know the available list, the query is 'SOUR1:LIST:CAT?'
-        self.write('SOUR:LIST:SEL "/var/user/list1.lsw"') 
+        self.write('SOUR:LIST:SEL /VAR/USE') 
          
         #Prepare the strings for the list command
         str_freq = 'SOUR:LIST:FREQ ' + str(frequencies[0]) #String for the frequency list command
-        str_pow = 'SOUR:LIST:POW ' + str(powers[0]) #String for the power list command
-        str_dwell = 'SOUR:LIST:DWEL:LIST '+str(dwell) #String for the dwell list command
+        str_pow   = 'SOUR:LIST:POW ' + str(powers[0]) #String for the power list command
+        str_dwell = 'SOUR:LIST:DWEL '+str(dwell) #String for the dwell list command
         for i in range(1,len(frequencies)):
             str_freq += ', ' + str(frequencies[i])
             str_pow += ', ' + str(powers[i])
-            str_dwell += ', '+str(dwell)
+        
+        # For debugging
+        print(str_freq)
+        print(str_pow)
+        print(str_dwell)
         
         self.write(str_freq)
         self.write(str_pow)
         self.write(str_dwell)
+        
+        # In SMIQ manual, it says:
+        # Caution: This command has to be given after every creating and changing of a list.
+        self.write('SOUR:LIST:LEARn')
         
         #Apparently the SMA change to Fixed mode after the power and the Dwell list is send... 
         #So I just switch back to the initial mode to make sure we end up in the same state. 
@@ -1159,8 +1167,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         _debug('simq03b_api.set_output')
         
         #Note that, for SMA, switiching off the output set the automatically the mode to Fixed.... !!
-        if on: self.write("OUTP1:STAT ON")
-        else:  self.write("OUTP1:STAT OFF")
+        if on: self.write("OUTP:STAT ON")
+        else:  self.write("OUTP:STAT OFF")
         
 
     def get_output(self):
@@ -1169,8 +1177,9 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         _debug('simq03b_api.get_output')
         
-        x = self.query('OUTP1:STAT?')
+        x = self.query('OUTP:STAT?')
         if x == None: return None
+        print('Result is ', x) # For knowing the bug that we something have
         return int(x)
 
     def set_frequency(self, f=1e9):
@@ -1910,6 +1919,11 @@ if __name__ == '__main__':
     #self = GUISignalGenerator()
     #self = signal_generator_api('SMA100B') #This will not pop-out the GUI
     self = GUISignalGenerator('Anana') #This will pop-out the GUI
+    
+    # Note the api for quickly make tests
+    # For sending query, type a.query(YOUR_QUERY)
+    # For writting thing, type a.write(YOUR_QUERY)
+    a = self.api 
    
    
    

@@ -4,13 +4,13 @@
 /Anana/Generate-List|expanded	True
 /Anana/Generate-List/f1	2000000000.0
 /Anana/Generate-List/f1|expanded	True
-/Anana/Generate-List/f2	10000000000.0
+/Anana/Generate-List/f2	3000000000.0
 /Anana/Generate-List/f2|expanded	True
-/Anana/Generate-List/P1	10.0
+/Anana/Generate-List/P1	1.0
 /Anana/Generate-List/P1|expanded	True
-/Anana/Generate-List/P2	10.0
+/Anana/Generate-List/P2	2.0
 /Anana/Generate-List/P2|expanded	True
-/Anana/Generate-List/Steps	100
+/Anana/Generate-List/Steps	40
 /Anana/Generate-List/Steps|expanded	True
 /Anana/Generate-List/Direction	'1->2'
 /Anana/Generate-List/Direction|expanded	True
