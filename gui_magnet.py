@@ -1,18 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jan 20 14:18:37 2020
+Created on Fri Aug 21 10:41:45 2020
 
-Goal: A GUI containing all the 3 actuators GUI, for talking to them all at the same time. 
-
-I use the code "probe_station" in order tohave a starting point. 
-
-
-@author: Childresslab, Michael
+@author: Childresslab
 """
 
+from api_actuator import ApiActuator
 import spinmob     as _s
 import spinmob.egg as _e
-import actuator_GUI as _actuator
 import time
 import mcphysics   as _mp
 
@@ -20,7 +15,6 @@ import traceback
 _p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
 
 #Debug
-_actuator._debug_enabled = False
 _debug_enabled           = False
 
 #Fast acces to the GUI
@@ -37,7 +31,162 @@ def _debug(*a):
         print(', '.join(s))
 
 
-class magnet(_mp.visa_tools.visa_gui_base):
+class GUISingleActuator(_mp.visa_tools.visa_gui_base):
+    """
+    Graphical front-end for the actuator.
+    
+    Parameters
+    ----------
+    name='Anapico'
+        Make this unique for each object in a larger project. This 
+        will also be the first part of the filename for the other settings files.
+   
+    show=True
+        Whether to show the window immediately.
+         
+    block=False
+        Whether to block the command line while showing the window.
+    
+    pyvisa_py=False
+        Whether to use pyvisa_py or not.
+    """
+
+    def __init__(self, name='Actuator', show=True, block=False, timeout=2e3, write_sleep=0.1, pyvisa_py=False):
+        _debug('gui.__init__()')
+        
+        # Run the basic stuff.
+        _mp.visa_tools.visa_gui_base.__init__(self, name, show, block, ApiActuator, timeout=timeout, write_sleep=write_sleep, pyvisa_py=pyvisa_py, hello_query='1VE?', baud_rate=921600)
+    
+        #Give a name to the GUI, for helping debugging
+        self.name = 'Bibi'
+    
+        # Add stuff to the GUI.
+        #On the top
+        self.button_reset       = self.grid_top.add(_g.Button('Reset', checkable=True)).set_width(60).disable()
+        self.button_state       = self.grid_top.add(_g.Button('State', checkable=True)).set_width(75).disable()
+        self.button_move        = self.grid_top.add(_g.Button('Move', checkable=True)).set_width(100).disable()
+        self.button_stop        = self.grid_top.add(_g.Button('STOP', checkable=True, )).set_width(100).enable()
+        self.button_stop.set_colors(text='red', background='yellow') #Be fancy
+        #Elsewhere
+        self.label_position     = self.grid_top.place_object(_g.Label('Position = XX mm'), 0,1,column_span=2)
+        self.label_state        = self.grid_top.place_object(_g.Label('State = LOL'), 2,1,column_span=2)  
+        self.label_name        = self.grid_top.place_object(_g.Label('Name = '+self.name), 4,1,column_span=2)  
+        
+        #This is some setting
+        self.settings.add_parameter('Motion/Target_position', bounds=(0,25), suffix=' mm')
+        self.settings.add_parameter('Motion/Speed'          , bounds=(0,2) , suffix=' units/sec')
+        
+        
+        #Add a timer for some update when the actuator moves
+        self.timer_moving = _g.Timer(interval_ms=500, single_shot=False)
+        self.timer_moving._widget.timeout.connect( self._update ) #Each time it tick, it gonna do the function self._update
+        
+        
+        
+        #Connection of the button to the function
+        self.button_state           .signal_toggled.connect(self._button_state_toggled)
+        self.button_reset           .signal_toggled.connect(self._button_reset_toggled)
+        self.button_move            .signal_toggled.connect(self._button_move_toggled)
+        self.button_stop            .signal_toggled.connect(self._button_stop_toggled)
+        self.button_connect         .signal_toggled.connect(self._update)
+        
+        #Enable the button, set them weither they are checked or not. 
+        self.button_state.set_checked(False,  block_events=True).enable()
+        self.button_reset.set_checked(False,  block_events=True).enable()
+        self.button_move .set_checked(False,  block_events=True).enable()
+           
+        
+    def set_name(self, name):
+        """
+        Set the name of the GUI
+        """
+        self.name = name
+        #Update the name in the GUI
+        self.label_name.set_text('Name = '+name)
+        
+    def get_name(self):
+        """
+        Get the name of the GUI
+        """
+        return self.name
+        
+    def _button_reset_toggled(self, *a):
+        """
+        Reset the actuator. 
+        WARNING: this will put back the actuator in position 0. 
+        """
+        _debug('actuator.button_reset_toggled()')
+        
+        self.timer_moving.start() #It's gonna move, so update
+        self.api.reset()
+        #Put back the button unchecked
+        self.button_reset.set_checked(False,  block_events=True).enable()
+        
+    def _button_state_toggled(self, *a):
+        """
+        Update the state of the actuator. This calls self._update()
+        """
+        _debug('actuator._button_state_toggled()')
+        
+        #Update
+        self._update()
+        #Put it back unchecked
+        self.button_state.set_checked(False,  block_events=True).enable()
+        
+    def _button_move_toggled(self, *a):
+        """
+        Move the actuator to position set by the parameter Motion/Target_position
+        """
+        _debug('actuator._button_move_toggled()')
+        
+        #Set the velocity
+        v = self.settings['Motion/Speed'] #Extract the velocity from the parameters
+        self.api.set_velocity(v)
+        #Set the position
+        r = self.settings['Motion/Target_position'] #Extract the position from the parameters
+        self.api.set_position_abs(r)
+        
+        #Start to udpate
+        self.timer_moving.start()
+        
+    def _button_stop_toggled(self, *a):
+        """
+        Stop the motion of the actuator !
+        """
+        _debug('actuator._button_stop_toggled()')
+        
+        self.api.stop_motion()
+        self._update() #udpate the state
+        self.button_stop.set_checked(value=False) #Make it 'Clickable' again 
+    
+    def _update(self):
+        """
+        Update the information shown.
+        """
+        _debug('actuator._update()')
+        
+        #Update only if the api exist
+        if self.api != None: 
+            #Update the position of the actuator.
+            strpos = 'Position = ' + str(self.api.get_position()) + ' mm'
+            self.label_position.set_text(strpos)
+            _debug(strpos) 
+            #Update the state         
+            strState = 'State = ' + self.api.get_state()
+            self.label_state.set_text(strState)
+            _debug(strState) 
+            
+            #If the actuator doesn't move or is not homing. 
+            cond1 = 'MOVING' == self.api.get_state()
+            cond2 = 'HOMING' == self.api.get_state()
+            if not(cond1 or cond2):
+                #Stop to trigger the update with the timer
+                self.timer_moving.stop()
+                #Also uncheck the move button if there is not motion
+                self.button_move .set_checked(False,  block_events=True).enable()
+                
+                
+class GUIMagnet(_mp.visa_tools.visa_gui_base):
     """
     Class that combines 3 actuator GUIs in order to control the position of the magnet.  
     """
@@ -57,13 +206,13 @@ class magnet(_mp.visa_tools.visa_gui_base):
         self.window = _g.Window(name, autosettings_path=self.name+'_window').set_size() 
         
         #Create the instance for the three actuator
-        self.X = _actuator.actuator(show=False)
+        self.X = GUISingleActuator(show=False)
         self.X.settings['VISA/Device'] = 'COM5'
         self.X.set_name('Super-X')
-        self.Y = _actuator.actuator(show=False)
+        self.Y = GUISingleActuator(show=False)
         self.Y.settings['VISA/Device'] = 'COM4'
         self.Y.set_name('Mega-Y')
-        self.Z = _actuator.actuator(show=False)
+        self.Z = GUISingleActuator(show=False)
         self.Z.settings['VISA/Device'] = 'COM3'
         self.Z.set_name('Ultra-Z')
 
@@ -263,20 +412,28 @@ class magnet(_mp.visa_tools.visa_gui_base):
         
 
         
-        
-        
-        
-        
-        
-        
-        
-        
 
 
 
 #By default set the object
 if __name__ == '__main__':
-#    cc = actuator_api().
-    self = magnet(name='Magnetooooo') #This will pop-up the GUI
-   
-   
+    _debug_enabled = True
+    import api_actuator
+    api_actuator._debug_enabled
+    
+#    cc = ApiActuator().
+    self = GUIMagnet(name='Magnetooooo') #This will pop-up the GUI
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

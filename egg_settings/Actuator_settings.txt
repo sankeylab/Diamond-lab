@@ -1,0 +1,9 @@
+/Actuator/VISA|expanded	True
+/Actuator/VISA/Device	'COM4'
+/Actuator/VISA/Device|expanded	True
+/Actuator/Motion|expanded	True
+/Actuator/Motion/Target_position	15.0
+/Actuator/Motion/Target_position|expanded	True
+/Actuator/Motion/Speed	2.0
+/Actuator/Motion/Speed|expanded	True
+

@@ -22,13 +22,11 @@ ATTEMP to use the class CONEX inside the mcphysics GUI.
 #from CONEX_controller import CONEX 
 #import time
 import mcphysics   as _mp
-import spinmob.egg as _egg
 import time
 
 import traceback
 _p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
 
-_g = _egg.gui
 
 # Debug stuff.
 _mp.visa_tools._debug_enabled = False
@@ -42,7 +40,7 @@ def _debug(*a):
 
 
         
-class actuator_api(_mp.visa_tools.visa_api_base):
+class ApiActuator(_mp.visa_tools.visa_api_base):
     """
     General actuator API base. This will connect and then, based on
     the model number, inherit all the commands from one of the specific model
@@ -52,7 +50,7 @@ class actuator_api(_mp.visa_tools.visa_api_base):
         """
         Visa-based connection to the Anapico signal generator.
         """
-        _debug('actuator_api.__init__()', pyvisa_py, simulation, timeout, write_sleep)
+        _debug('ApiActuator.__init__()', pyvisa_py, simulation, timeout, write_sleep)
         
         # Run the core setup.
         _mp.visa_tools.visa_api_base.__init__(self, name, pyvisa_py, simulation, timeout=timeout, write_sleep=write_sleep, **kwargs)
@@ -76,7 +74,7 @@ class actuator_api(_mp.visa_tools.visa_api_base):
         """
         Reset the actuator
         """
-        _debug('actuator_api.reset()')
+        _debug('ApiActuator.reset()')
         
         return self._api.reset()
         
@@ -84,7 +82,7 @@ class actuator_api(_mp.visa_tools.visa_api_base):
         """
         Return the state. 
         """
-        _debug('actuator_api.get_state()')
+        _debug('ApiActuator.get_state()')
         return self._api.get_state()
     
     def set_position_abs(self, r):
@@ -243,159 +241,7 @@ class CONEX_api(_mp.visa_tools.visa_api_base):
 
 
      
-class actuator(_mp.visa_tools.visa_gui_base):
-    """
-    Graphical front-end for the actuator.
-    
-    Parameters
-    ----------
-    name='Anapico'
-        Make this unique for each object in a larger project. This 
-        will also be the first part of the filename for the other settings files.
-   
-    show=True
-        Whether to show the window immediately.
-         
-    block=False
-        Whether to block the command line while showing the window.
-    
-    pyvisa_py=False
-        Whether to use pyvisa_py or not.
-    """
 
-    def __init__(self, name='Actuator', show=True, block=False, timeout=2e3, write_sleep=0.1, pyvisa_py=False):
-        _debug('gui.__init__()')
-        
-        # Run the basic stuff.
-        _mp.visa_tools.visa_gui_base.__init__(self, name, show, block, actuator_api, timeout=timeout, write_sleep=write_sleep, pyvisa_py=pyvisa_py, hello_query='1VE?', baud_rate=921600)
-    
-        #Give a name to the GUI, for helping debugging
-        self.name = 'Bibi'
-    
-        # Add stuff to the GUI.
-        #On the top
-        self.button_reset       = self.grid_top.add(_g.Button('Reset', checkable=True)).set_width(60).disable()
-        self.button_state       = self.grid_top.add(_g.Button('State', checkable=True)).set_width(75).disable()
-        self.button_move        = self.grid_top.add(_g.Button('Move', checkable=True)).set_width(100).disable()
-        self.button_stop        = self.grid_top.add(_g.Button('STOP', checkable=True, )).set_width(100).enable()
-        self.button_stop.set_colors(text='red', background='yellow') #Be fancy
-        #Elsewhere
-        self.label_position     = self.grid_top.place_object(_g.Label('Position = XX mm'), 0,1,column_span=2)
-        self.label_state        = self.grid_top.place_object(_g.Label('State = LOL'), 2,1,column_span=2)  
-        self.label_name        = self.grid_top.place_object(_g.Label('Name = '+self.name), 4,1,column_span=2)  
-        
-        #This is some setting
-        self.settings.add_parameter('Motion/Target_position', limits=(0,25), suffix=' mm')
-        self.settings.add_parameter('Motion/Speed'          , limits=(0,2) , suffix=' units/sec')
-        
-        
-        #Add a timer for some update when the actuator moves
-        self.timer_moving = _g.Timer(interval_ms=500, single_shot=False)
-        self.timer_moving._widget.timeout.connect( self._update ) #Each time it tick, it gonna do the function self._update
-        
-        
-        
-        #Connection of the button to the function
-        self.button_state           .signal_toggled.connect(self._button_state_toggled)
-        self.button_reset           .signal_toggled.connect(self._button_reset_toggled)
-        self.button_move            .signal_toggled.connect(self._button_move_toggled)
-        self.button_stop            .signal_toggled.connect(self._button_stop_toggled)
-        self.button_connect         .signal_toggled.connect(self._update)
-        
-        #Enable the button, set them weither they are checked or not. 
-        self.button_state.set_checked(False,  block_events=True).enable()
-        self.button_reset.set_checked(False,  block_events=True).enable()
-        self.button_move .set_checked(False,  block_events=True).enable()
-           
-        
-    def set_name(self, name):
-        """
-        Set the name of the GUI
-        """
-        self.name = name
-        #Update the name in the GUI
-        self.label_name.set_text('Name = '+name)
-        
-    def get_name(self):
-        """
-        Get the name of the GUI
-        """
-        return self.name
-        
-    def _button_reset_toggled(self, *a):
-        """
-        Reset the actuator. 
-        WARNING: this will put back the actuator in position 0. 
-        """
-        _debug('actuator.button_reset_toggled()')
-        
-        self.timer_moving.start() #It's gonna move, so update
-        self.api.reset()
-        #Put back the button unchecked
-        self.button_reset.set_checked(False,  block_events=True).enable()
-        
-    def _button_state_toggled(self, *a):
-        """
-        Update the state of the actuator. This calls self._update()
-        """
-        _debug('actuator._button_state_toggled()')
-        
-        #Update
-        self._update()
-        #Put it back unchecked
-        self.button_state.set_checked(False,  block_events=True).enable()
-        
-    def _button_move_toggled(self, *a):
-        """
-        Move the actuator to position set by the parameter Motion/Target_position
-        """
-        _debug('actuator._button_move_toggled()')
-        
-        #Set the velocity
-        v = self.settings['Motion/Speed'] #Extract the velocity from the parameters
-        self.api.set_velocity(v)
-        #Set the position
-        r = self.settings['Motion/Target_position'] #Extract the position from the parameters
-        self.api.set_position_abs(r)
-        
-        #Start to udpate
-        self.timer_moving.start()
-        
-    def _button_stop_toggled(self, *a):
-        """
-        Stop the motion of the actuator !
-        """
-        _debug('actuator._button_stop_toggled()')
-        
-        self.api.stop_motion()
-        self._update() #udpate the state
-        self.button_stop.set_checked(value=False) #Make it 'Clickable' again 
-    
-    def _update(self):
-        """
-        Update the information shown.
-        """
-        _debug('actuator._update()')
-        
-        #Update only if the api exist
-        if self.api != None: 
-            #Update the position of the actuator.
-            strpos = 'Position = ' + str(self.api.get_position()) + ' mm'
-            self.label_position.set_text(strpos)
-            _debug(strpos) 
-            #Update the state         
-            strState = 'State = ' + self.api.get_state()
-            self.label_state.set_text(strState)
-            _debug(strState) 
-            
-            #If the actuator doesn't move or is not homing. 
-            cond1 = 'MOVING' == self.api.get_state()
-            cond2 = 'HOMING' == self.api.get_state()
-            if not(cond1 or cond2):
-                #Stop to trigger the update with the timer
-                self.timer_moving.stop()
-                #Also uncheck the move button if there is not motion
-                self.button_move .set_checked(False,  block_events=True).enable()
         
                     
         
@@ -407,7 +253,7 @@ class actuator(_mp.visa_tools.visa_gui_base):
 
 #By default set the object
 if __name__ == '__main__':
-#    cc = actuator_api().
+#    cc = ApiActuator().
     self = actuator(name='CONEX') #This will pop-up the GUI
    
    
