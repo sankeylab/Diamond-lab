@@ -10,6 +10,7 @@ import spinmob     as _s
 import spinmob.egg as _e
 import time
 import mcphysics   as _mp
+import numpy as np
 
 import traceback
 _p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
@@ -52,7 +53,7 @@ class GUISingleActuator(_mp.visa_tools.visa_gui_base):
     """
 
     def __init__(self, name='Actuator', show=True, block=False, timeout=2e3, write_sleep=0.1, pyvisa_py=False):
-        _debug('gui.__init__()')
+        _debug('GUISingleActuator.__init__()')
         
         # Run the basic stuff.
         _mp.visa_tools.visa_gui_base.__init__(self, name, show, block, ApiActuator, timeout=timeout, write_sleep=write_sleep, pyvisa_py=pyvisa_py, hello_query='1VE?', baud_rate=921600)
@@ -115,7 +116,7 @@ class GUISingleActuator(_mp.visa_tools.visa_gui_base):
         Reset the actuator. 
         WARNING: this will put back the actuator in position 0. 
         """
-        _debug('actuator.button_reset_toggled()')
+        _debug('GUISingleActuator.button_reset_toggled()')
         
         self.timer_moving.start() #It's gonna move, so update
         self.api.reset()
@@ -126,7 +127,7 @@ class GUISingleActuator(_mp.visa_tools.visa_gui_base):
         """
         Update the state of the actuator. This calls self._update()
         """
-        _debug('actuator._button_state_toggled()')
+        _debug('GUISingleActuator._button_state_toggled()')
         
         #Update
         self._update()
@@ -137,7 +138,7 @@ class GUISingleActuator(_mp.visa_tools.visa_gui_base):
         """
         Move the actuator to position set by the parameter Motion/Target_position
         """
-        _debug('actuator._button_move_toggled()')
+        _debug('GUISingleActuator._button_move_toggled()')
         
         #Set the velocity
         v = self.settings['Motion/Speed'] #Extract the velocity from the parameters
@@ -153,7 +154,7 @@ class GUISingleActuator(_mp.visa_tools.visa_gui_base):
         """
         Stop the motion of the actuator !
         """
-        _debug('actuator._button_stop_toggled()')
+        _debug('GUISingleActuator._button_stop_toggled()')
         
         self.api.stop_motion()
         self._update() #udpate the state
@@ -163,7 +164,7 @@ class GUISingleActuator(_mp.visa_tools.visa_gui_base):
         """
         Update the information shown.
         """
-        _debug('actuator._update()')
+        _debug('GUISingleActuator._update()')
         
         #Update only if the api exist
         if self.api != None: 
@@ -195,7 +196,9 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         """
         Create the GUI 
         """
-        _debug('magnet.__init__()', name)
+        _debug('GUIMagnet.__init__()', name)
+        _debug('Success is going from failure to failure without losing your enthusiasm – Winston Churchill')
+        
         # Remember the name. It is important a name, you know. 
         self.name = name
         
@@ -251,7 +254,7 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         """
         Load a list of x,y,z points for the magnetic field sweep
         """
-        _debug('magnet._button_load_list_toggled()')
+        _debug('GUIMagnet._button_load_list_toggled()')
         
         #Load the list. 
         self.d = _s.data.load(text='Load list of x,y,z positions ;)', filters="*.csv")
@@ -268,7 +271,7 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         Move the actuator at each x,y,z position loaded in the table self.table_positions
         Perfom something at each of these position. We have to thing more about how to implement this within the master GUI. 
         """
-        _debug('magnet_button_scan_magnet_toggled')
+        _debug('GUIMagnet._button_scan_magnet_toggled')
         
 
         
@@ -328,7 +331,7 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
             The name of the file if it succed OR
             An error message corresponding to what happened. 
         """
-        _debug('magnet.fill_table_positions()')
+        _debug('GUIMagnet.fill_table_positions()')
         
         #Try to open the data
         try: 
@@ -375,7 +378,7 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
                           Then wait that the three actuator finish to move. 
         
         """
-        _debug('magnet.go_to()', actuator, column, row)
+        _debug('GUIMagnet.go_to()', actuator, column, row)
         
         #Set the target position
         r = self.table_positions.get_value(column=column, row=row)
@@ -406,11 +409,82 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         i is the iteration in the table (the i'th row), such that we can perform 
         a task depending on the iteration. 
         """
-        _debug('magnet_task_scan_magnet()', i)
+        _debug('GUIMagnet_task_scan_magnet()', i)
         
         print('On the %dth row ;)'%i)
         
+    def scan_xyz_line(self, xend=0, yend=0, zend=0, speed=1, dt=0.1):
+        """
+        Move in a straight line from the current position to the target position. 
+        
+        xend:
+            (in mm) Target x position
+        yend:
+            (in mm) Target y position
+        zend:
+            (in mm) Target z position    
+        speed:
+            (in mm/sec) Speed of the displacement along the line
+        dt:
+            (in sec) Interval of time to record something
+        """
+        # Set the target positions
+        self.X.settings['Motion/Target_position'] = xend
+        self.Y.settings['Motion/Target_position'] = yend
+        self.Z.settings['Motion/Target_position'] = zend
+        
+        # Find the speed of each actuator for them to reach the end at the same 
+        # time
+        # We need to know the distance that they will have to travel 
+        dx = np.abs(self.X.api.get_position() - xend)
+        dy = np.abs(self.Y.api.get_position() - yend)
+        dz = np.abs(self.Z.api.get_position() - zend)
+        ds = np.sqrt(dx*dx + dy*dy + dz*dz) # Total distance to travel
+        self.T = ds/speed # Total time for making the displacement
+        # Now determine the speed along each axis
+        self.vx = dx/self.T
+        self.vy = dy/self.T
+        self.vz = dz/self.T
+        self.X.settings['Motion/Speed'] = self.vx
+        self.Y.settings['Motion/Speed'] = self.vy
+        self.Z.settings['Motion/Speed'] = self.vz
+        
+        # This will store the positions of the actuator
+        self.xs = []
+        self.ys = []
+        self.zs = []
 
+         #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
+        self.window.process_events()        
+        
+        # Go !
+        self.X.button_move.click()
+        self.Y.button_move.click()
+        self.Z.button_move.click()
+        
+        # Note the condition for keeping doing
+        # As long as the three actuator move
+        condition1 = self.X.api.get_state() == 'MOVING'
+        condition2 = self.Y.api.get_state() == 'MOVING'
+        condition3 = self.Z.api.get_state() == 'MOVING'
+        condition = condition1 or condition2 or condition3
+        while condition:
+            # wait the desired interval of time
+            time.sleep(dt)
+            # Let's take the positions
+            self.xs.append( self.X.api.get_position() )
+            self.ys.append( self.Y.api.get_position() )
+            self.zs.append( self.Z.api.get_position() )
+             #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
+            self.window.process_events()
+            
+            # Note the condition for keeping doing
+            # As long as the three actuator move
+            condition1 = self.X.api.get_state() == 'MOVING'
+            condition2 = self.Y.api.get_state() == 'MOVING'
+            condition3 = self.Z.api.get_state() == 'MOVING'
+            condition = condition1 or condition2 or condition3
+        
         
 
 
@@ -423,6 +497,19 @@ if __name__ == '__main__':
     
 #    cc = ApiActuator().
     self = GUIMagnet(name='Magnetooooo') #This will pop-up the GUI
+    
+    # Check the trajectory 
+    from mpl_toolkits.mplot3d import Axes3D # This import registers the 3D projection, but is otherwise unused.
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')   
+    ax.scatter(self.xs[1:-1], self.ys[1:-1], self.zs[1:-1]) 
+    ax.scatter(self.xs[0], self.ys[0], self.zs[0], color='red',label='First')
+    ax.scatter(self.xs[-1], self.ys[-1], self.zs[-1], color='y',label='End')
+    plt.legend()
+    ax.set_xlabel('x (mm)')
+    ax.set_ylabel('y (mm)')
+    ax.set_zlabel('z (mm)')
     
     
     
