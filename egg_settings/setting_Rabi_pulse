@@ -2,7 +2,7 @@ dt_pulse	0.025
 dt_pulse|expanded	True
 Frequency	3.1
 Frequency|expanded	True
-N	50
+N	20
 N|expanded	True
 P_min	-20.0
 P_min|expanded	True

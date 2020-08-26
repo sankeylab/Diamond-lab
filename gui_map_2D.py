@@ -58,12 +58,12 @@ class map2D(egg.gui.Window):
         x = np.linspace(1, 20, 100)
         y = np.linspace(1, 20, 100)
         X,Y = np.meshgrid(x,y)
-        self.Z = np.cos(X*2)*np.sin(Y)*X*Y        
-        self.plot_image.setImage(self.Z.T,
-                                 pos=(self.posX, self.posY),
-                                 scale =(self.scaleX, self.scaleY)) 
-        self.plot_item.setLabel('bottom', text=self.labelX)
-        self.plot_item.setLabel('left'  , text=self.labelY)        
+        self.Z = np.cos(X*2)*np.sin(Y)*X*Y  
+        
+        # Set the map
+        self.set_data(self.Z, 
+                      (x.min(), x.max(), len(x)), 
+                      (y.min(), y.max(), len(y)))    
         
 
         
@@ -118,9 +118,9 @@ class map2D(egg.gui.Window):
         if label_y != -1:
             self.labelY = label_y   
             self.plot_item.setLabel('left'  , text=self.labelY) 
-            
-            
-        
+        if color != -1:
+            self.set_colormap(color)
+                   
         # Update the image
         self.plot_image.setImage(self.Z.T,
                                  pos=(self.posX, self.posY),

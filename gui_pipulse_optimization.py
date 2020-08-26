@@ -92,25 +92,14 @@ class GUIPiPulseOptimization(egg.gui.Window):
                                             type='int', step=10, 
                                             bounds=[0,None],
                                             tip='Number of frequency to sweep')         
-    
-        
+        self.treeDic_settings.add_parameter('N_f', 200, 
+                                            type='int', step=10, 
+                                            bounds=[0,None],
+                                            tip='Number of frequency to sweep')                 
         # A map for the incoming data
         self.map =  map2D()
         self.place_object(self.map, column=3, column_span=6,
-                          row=1,row_span=5,alignment=0)          
-#         # A plot item for showing the incoming data
-#        self.plot_item = egg.pyqtgraph.PlotItem()
-#        self.plot_image = egg.pyqtgraph.ImageView(view=self.plot_item)
-#        self.place_object(self.plot_image, column=3, column_span=6,
-#                          row=1,row_span=5,alignment=0)  
-#        # Add a dummy map 
-#        x = np.linspace(1, 20, 100)
-#        y = np.linspace(1, 20, 100)
-#        X,Y = np.meshgrid(x,y)
-#        self.Z = np.cos(X*2)*np.sin(Y)*X*Y        
-#        self.plot_image.setImage(self.Z.T,
-#                                 pos=(0, 0),
-#                                 scale =(2, 3))
+                          row=1,row_span=5,alignment=0)      
 
     def button_run_clicked(self):
         """
@@ -191,16 +180,6 @@ class GUIPiPulseOptimization(egg.gui.Window):
                           label_x = 'Power (dBm)', 
                           label_y = 'Frequency (Ghz)')
 
-#        # Set the axis
-#        self.plot_item.setLabel('bottom', text='Power (dBm)')
-#        self.plot_item.setLabel('left'  , text='Frequency (Ghz)')
-#         Set the image
-##        self.scale_x = (self.Pmax - self.Pmin)/self.Np
-#        self.scale_y = (self.fmax - self.fmin)/self.Nf
-#        self.plot_image.setImage(self.Z.T,
-#                                 pos=(self.Pmin, self.fmin),
-#                                 scale =(self.scale_x, self.scale_y))
-        
         for i, f in enumerate(self.fs):
             _debug('GUIPiPulseOptimization: run: f=', f)
             # The first step is to prepare the pulse sequence. 
@@ -226,23 +205,11 @@ class GUIPiPulseOptimization(egg.gui.Window):
             
             self.Z[i] = self.data[1]
             
-            
             # Update the image
             self.map.set_data(self.Z)
-#            self.plot_image.setImage(self.Z.T,
-#                                     pos=(self.Pmin, self.fmin),
-#                                     scale =(self.scale_x, self.scale_y))      
-#            # scale/pan the view to fit the image.
-#            self.plot_image.autoRange()
-#            # Set the aspect ratio to false for not having the image to scale
-#            self.plot_image.view.setAspectLocked(False)
 
             
             _debug('GUIPiPulseOptimization: run: f=', f, 'Okay')
-            
-
- 
-
 
 
         
