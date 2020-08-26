@@ -65,13 +65,28 @@ class map2D(egg.gui.Window):
                       (x.min(), x.max(), len(x)), 
                       (y.min(), y.max(), len(y)))    
         
-
+        # Place a combic box for the colormap
+        # It's not the best way to do it for now, but it gonna do the job for now. 
+        self.list_colormap = self.colormaps.get_list_colormaps()
+        self.comboxBox_colormap = egg.gui.ComboBox(items=self.list_colormap )
+        self.place_object(self.comboxBox_colormap, 0,0, alignment=-1)
+        self.connect(self.comboxBox_colormap.signal_changed, self.comboxBox_colormap_changed)
+        # Trigger it for a inialization
+        self.comboxBox_colormap_changed()
         
-
+    def comboxBox_colormap_changed(self):
+        """
+        Called when the combo box changes
+        """
+        self.color_name = self.comboxBox_colormap.get_text()
+        _debug('map2D: comboxBox_colormap_changed ', self.color_name)
+        mycmap = self.colormaps.get_colormap(self.color_name)
+        self.plot_image.setColorMap(mycmap)
+        
+        
     def set_data(self, Z, 
                  x_info=-1, y_info=-1,
-                 label_x=-1, label_y=-1, 
-                 color=-1):
+                 label_x=-1, label_y=-1):
         """
         Set the data on the map. 
         
@@ -87,10 +102,7 @@ class map2D(egg.gui.Window):
         label_x:
             String. Label on the x axis
         label_y:
-            String. Label on the y axis    
-        color:
-            (string) name of the colormap to use.See the method set_colormap for 
-            more info. 
+            String. Label on the y axis 
             
         """
         _debug('map2D: set_data')
@@ -118,8 +130,6 @@ class map2D(egg.gui.Window):
         if label_y != -1:
             self.labelY = label_y   
             self.plot_item.setLabel('left'  , text=self.labelY) 
-        if color != -1:
-            self.set_colormap(color)
                    
         # Update the image
         self.plot_image.setImage(self.Z.T,
@@ -129,25 +139,6 @@ class map2D(egg.gui.Window):
         self.plot_image.autoRange()
         # Set the aspect ratio to false for not having the image to scale
         self.plot_image.view.setAspectLocked(False)     
-        
-    def get_list_colormap(self):
-        """
-        Return the list of the possible colormap
-        """
-        _debug('map2D: get_list_colormap')
-        return self.colormaps.get_list_colormaps()
-    
-    def set_colormap(self, name):
-        """
-        Set the colormap.
-        
-        name:
-            (String) Name of the color map. It must be contained in the list 
-            returned by the method get_list_colormap.
-        """
-        _debug('map2D: set_colormap')
-        mycmap = self.colormaps.get_colormap(name)
-        self.plot_image.setColorMap(mycmap)
         
 
         
@@ -288,7 +279,7 @@ if __name__ == '__main__':
     self = map2D()
     self.show()
     
-    list_color = self.get_list_colormap()
+    list_color = self.colormaps.get_list_colormaps()
     print('List of colormap = ', list_color)
     
     # Try some data
@@ -310,7 +301,6 @@ if __name__ == '__main__':
     self.set_data(Z, (x.min(), x.max(), len(x)), (y.min(), y.max(), len(y)),
                   'Hey x', 'Holla y')
     
-    self.set_colormap('ca_va_bien_aller')
     
     
     
