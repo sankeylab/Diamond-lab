@@ -22,7 +22,7 @@ Nb_point_Y	100
 Nb_point_Y|expanded	True
 Slice_shown	0
 Slice_shown|expanded	True
-Colormap	'Awesome'
+Colormap	'old_time'
 Colormap|expanded	True
 Set_aspect	True
 Set_aspect|expanded	True

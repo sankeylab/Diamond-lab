@@ -413,7 +413,40 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         
         print('On the %dth row ;)'%i)
         
-    def scan_xyz_line(self, xend=0, yend=0, zend=0, speed=1, dt=0.1):
+    def go_to_xyz(self, x, y, z, want_wait=False):
+        """
+        Go to x, y, z (in mm)
+        
+        want_wait:
+            (boolean) Weither of not we want to wait before it finishes
+        """
+        
+        # Set the target positions
+        self.X.settings['Motion/Target_position'] = x
+        self.Y.settings['Motion/Target_position'] = y
+        self.Z.settings['Motion/Target_position'] = z       
+        
+        # Go for real
+        self.X.button_move.click()
+        self.Y.button_move.click()
+        self.Z.button_move.click()
+
+        if want_wait:
+            #Wait that the actuators finished to move. 
+            condition = True
+            while condition:
+                # Wait for not exploding the CPU
+                time.sleep(0.1)
+                 #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
+                self.window.process_events()
+                # Note the condition for keeping doing
+                # As long as the three actuator move
+                condition1 = self.X.api.get_state() == 'MOVING'
+                condition2 = self.Y.api.get_state() == 'MOVING'
+                condition3 = self.Z.api.get_state() == 'MOVING'
+                condition = condition1 or condition2 or condition3
+            
+    def scan_xyz_line(self, xend=0, yend=0, zend=0, speed=1, N=10):
         """
         Move in a straight line from the current position to the target position. 
         
@@ -425,9 +458,12 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
             (in mm) Target z position    
         speed:
             (in mm/sec) Speed of the displacement along the line
-        dt:
-            (in sec) Interval of time to record something
+        N:
+            Number of points to record
         """
+        self.xend = xend
+        self.yend = yend
+        self.zend = zend
         # Set the target positions
         self.X.settings['Motion/Target_position'] = xend
         self.Y.settings['Motion/Target_position'] = yend
@@ -436,15 +472,18 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         # Find the speed of each actuator for them to reach the end at the same 
         # time
         # We need to know the distance that they will have to travel 
-        dx = np.abs(self.X.api.get_position() - xend)
-        dy = np.abs(self.Y.api.get_position() - yend)
-        dz = np.abs(self.Z.api.get_position() - zend)
-        ds = np.sqrt(dx*dx + dy*dy + dz*dz) # Total distance to travel
+        self.xin = self.X.api.get_position()
+        self.yin = self.Y.api.get_position()
+        self.zin = self.Z.api.get_position()
+        self.dx = np.abs(self.xin - xend)
+        self.dy = np.abs(self.yin - yend)
+        self.dz = np.abs(self.zin - zend)
+        ds = np.sqrt(self.dx**2 + self.dy**2 + self.dz**2) # Total distance to travel
         self.T = ds/speed # Total time for making the displacement
         # Now determine the speed along each axis
-        self.vx = dx/self.T
-        self.vy = dy/self.T
-        self.vz = dz/self.T
+        self.vx = self.dx/self.T
+        self.vy = self.dy/self.T
+        self.vz = self.dz/self.T
         self.X.settings['Motion/Speed'] = self.vx
         self.Y.settings['Motion/Speed'] = self.vy
         self.Z.settings['Motion/Speed'] = self.vz
@@ -453,11 +492,16 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         self.xs = []
         self.ys = []
         self.zs = []
-
+        self.dt = self.T/N # How much time to wait between points
          #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
         self.window.process_events()        
         
         # Go !
+        # Let's take the positions
+        self.xs.append( self.X.api.get_position() )
+        self.ys.append( self.Y.api.get_position() )
+        self.zs.append( self.Z.api.get_position() )
+        # Go for real
         self.X.button_move.click()
         self.Y.button_move.click()
         self.Z.button_move.click()
@@ -470,13 +514,16 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         condition = condition1 or condition2 or condition3
         while condition:
             # wait the desired interval of time
-            time.sleep(dt)
+            time.sleep(self.dt)
             # Let's take the positions
             self.xs.append( self.X.api.get_position() )
             self.ys.append( self.Y.api.get_position() )
             self.zs.append( self.Z.api.get_position() )
              #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
             self.window.process_events()
+            
+            # Call a signal
+            self.event_scan_line_checkpoint()
             
             # Note the condition for keeping doing
             # As long as the three actuator move
@@ -485,6 +532,12 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
             condition3 = self.Z.api.get_state() == 'MOVING'
             condition = condition1 or condition2 or condition3
         
+    def event_scan_line_checkpoint(self):
+        """
+        Dummy function to be overrid. 
+        This is done when we scan a straight line, each time that we reach a
+        point to record.
+        """
         
 
 
@@ -501,25 +554,84 @@ if __name__ == '__main__':
     # Check the trajectory 
     from mpl_toolkits.mplot3d import Axes3D # This import registers the 3D projection, but is otherwise unused.
     import matplotlib.pyplot as plt
+#    fig = plt.figure()
+#    ax = fig.add_subplot(111, projection='3d')   
+#    ax.scatter(self.xs[1:-1], self.ys[1:-1], self.zs[1:-1]) 
+#    ax.scatter(self.xs[0], self.ys[0], self.zs[0], color='red',label='First')
+#    ax.scatter(self.xs[-1], self.ys[-1], self.zs[-1], color='y',label='End')
+#    ax.plot([self.xin,self.xend], [self.yin,self.yend], [self.zin,self.zend], label='Goal')
+#    plt.legend()
+#    ax.set_xlabel('x (mm)')
+#    ax.set_ylabel('y (mm)')
+#    ax.set_zlabel('z (mm)')
+#    # Set equal aspect
+#    # First get the extermum of all the pts
+#    allpts = np.concatenate((self.xs, self.ys, self.zs))
+#    maximum = np.max(allpts)
+#    minimum = np.min(allpts)
+#    ax.set_xlim3d(minimum, maximum)
+#    ax.set_ylim3d(minimum, maximum)
+#    ax.set_zlim3d(minimum, maximum)
+    
+    # Test many scan
+    xtots = []
+    ytots = []
+    ztots = []
+    # Try a plane
+    x1 = 10
+    x2 = 17
+    z1 = 15
+    z2 = 22
+    ys = np.linspace(14, 19, 10)
+    # First reach the initial position
+    self.go_to_xyz(x1, ys[0], z1, want_wait=True)
+    for i in range(int(len(ys)/2)):
+        y1 = ys[2*i]
+        y2 = ys[2*i+1]
+        # Make a zigzage following the y axis
+        self.scan_xyz_line(x2, y2, z2, speed=1, N=40)
+        xtots.extend(self.xs)
+        ytots.extend(self.ys)
+        ztots.extend(self.zs)
+        self.scan_xyz_line(x1, y1, z1, speed=1, N=40)
+        xtots.extend(self.xs)
+        ytots.extend(self.ys)
+        ztots.extend(self.zs)
+        
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')   
-    ax.scatter(self.xs[1:-1], self.ys[1:-1], self.zs[1:-1]) 
-    ax.scatter(self.xs[0], self.ys[0], self.zs[0], color='red',label='First')
-    ax.scatter(self.xs[-1], self.ys[-1], self.zs[-1], color='y',label='End')
+    ax.scatter(xtots, ytots, ztots) 
+    ax.scatter(xtots[0], ytots[0], ztots[0], color='red',label='First')
+    ax.scatter(xtots[-1], ytots[-1], ztots[-1], color='y',label='End')
     plt.legend()
     ax.set_xlabel('x (mm)')
     ax.set_ylabel('y (mm)')
     ax.set_zlabel('z (mm)')
+    # Set equal aspect
+    # First get the extermum of all the pts
+    allpts = np.concatenate((xtots, ytots, ztots))
+    maximum = np.max(allpts)
+    minimum = np.min(allpts)
+    ax.set_xlim3d(minimum, maximum)
+    ax.set_ylim3d(minimum, maximum)
+    ax.set_zlim3d(minimum, maximum)    
     
     
     
     
-    
-    
-    
-    
-    
-    
+#    # Old scan
+#    self.scan_xyz_line(20.5, 9.3, 17.7, speed=1, N=40)
+#    xtots.extend(self.xs)
+#    ytots.extend(self.ys)
+#    ztots.extend(self.zs)
+#    self.scan_xyz_line(14, 9.4, 10, speed=1, N=40)
+#    xtots.extend(self.xs)
+#    ytots.extend(self.ys)
+#    ztots.extend(self.zs)
+#    self.scan_xyz_line(17, 14, 17.7, speed=1, N=40)
+#    xtots.extend(self.xs)
+#    ytots.extend(self.ys)
+#    ztots.extend(self.zs)   
     
     
     
