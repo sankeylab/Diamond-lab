@@ -91,11 +91,7 @@ class GUIPiPulseOptimization(egg.gui.Window):
         self.treeDic_settings.add_parameter('N_f', 200, 
                                             type='int', step=10, 
                                             bounds=[0,None],
-                                            tip='Number of frequency to sweep')         
-        self.treeDic_settings.add_parameter('N_f', 200, 
-                                            type='int', step=10, 
-                                            bounds=[0,None],
-                                            tip='Number of frequency to sweep')                 
+                                            tip='Number of frequency to sweep')               
         # A map for the incoming data
         self.map =  map2D()
         self.place_object(self.map, column=3, column_span=6,
