@@ -313,7 +313,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.connect(self.button_load_list.signal_clicked, self.button_load_list_clicked )
 
         #Add a button for loading the data
-        self.button_test  = self.place_object(egg.gui.Button('Prepare', checkable=True), 2,1)
+        self.button_test  = self.place_object(egg.gui.Button('Prepare'), 2,1)
         self.connect(self.button_test.signal_clicked, self.button_test_clicked )
         
         
@@ -324,6 +324,21 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.label_load_file    = self.place_object(egg.gui.Label('No File loaded ;)'), 3,0 )
 
 
+    def button_test_clicked(self):
+        """
+        Test to generate the data for scanning. 
+        """
+        
+        self.databox = _s.data.databox()
+        self.databox.insert_header('name', 'Hakuna matata')
+        
+        # Add each column
+        self.databox['xs'] = np.linspace(0, 4, 13)
+        self.databox['ys'] = np.linspace(0, 4, 13)+1
+        self.databox['zs'] = np.linspace(0, 4, 13)*0+13
+        
+        
+        
     def button_load_list_clicked(self, *a):
         """
         Load a list of x,y,z points for the magnetic field sweep
