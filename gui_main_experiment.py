@@ -13,6 +13,7 @@ import gui_confocal_main
 import gui_pulser
 import gui_saturation
 import gui_pipulse_optimization
+import gui_magnet
 
 import sys # Useful for error handling
 import traceback
@@ -79,9 +80,10 @@ class GUIMainExperiment(egg.gui.Window):
         _debug('GUIMainExperiment: initialize_GUI')
 
         # Prepare the GUI before to place them 
-        self.gui_confocal = gui_confocal_main.GUIMainConfocal(self.fpga)
-        self.gui_pulser   = gui_pulser.  GuiMainPulseSequence(self.fpga)
-        self.gui_saturation = gui_saturation.GUISaturation(self.fpga)
+        self.gui_confocal   = gui_confocal_main.GUIMainConfocal(self.fpga)
+        self.gui_pulser     = gui_pulser.  GuiMainPulseSequence(self.fpga)
+        self.gui_saturation = gui_saturation.     GUISaturation(self.fpga)
+        self.gui_magnet     = gui_magnet.GUIMagnet().window
         
         # Replace the optimer button outside, for easy access
         self.place_object(self.gui_confocal.gui_optimizer.button_optimize,
@@ -111,9 +113,13 @@ class GUIMainExperiment(egg.gui.Window):
         # Tab for the saturation analysis
         self.tab_saturation = self.tabs1.add_tab('Saturation curve')
         self.tab_saturation.place_object(self.gui_saturation, alignment=0)
+
+        # Tab for the control of the magnet
+        self.tab_magnet = self.tabs1.add_tab('Magnetooo')
+        self.tab_magnet.place_object(self.gui_magnet, alignment=0)
         
         # Tab for miscaleneous experiment that are more complexe that simple 
-        # Pulse sequence
+        # pulse sequence
         # Each experiment will be placed into tabs2
         self.tabs2 = egg.gui.TabArea()   
         self.tab_high_level = self.tabs1.add_tab('Awesome experiment')

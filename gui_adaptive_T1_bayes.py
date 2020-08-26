@@ -178,6 +178,7 @@ class GUIAdaptiveT1Bayes(egg.gui.Window):
         Run the protocole !
         """
         _debug('GUIAdaptiveT1Bayes: button_run_clicked')
+        print('Implement me !!')
         
         # Make the attribute to match with the settings
         self.initiate_attributes()

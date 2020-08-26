@@ -132,7 +132,7 @@ class GUIMap(egg.gui.Window):
         self.treeDic_settings  = egg.gui.TreeDictionary(autosettings_path='setting_map')
         self.place_object(self.treeDic_settings, column=6, column_span=3)   
         self.treeDic_settings.add_parameter('Wait_after_AOs', 1, 
-                                           type='int', step=1, 
+                                           type='float', step=1, 
                                            bounds=[0,None], suffix='us',
                                            tip='Time to wait after the AOs set.')
         self.treeDic_settings.add_parameter('Count_time', 1, 

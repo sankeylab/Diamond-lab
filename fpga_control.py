@@ -192,7 +192,14 @@ class FPGA_api():
             Wait time in us
         """
         _debug('FPGA_api: prepare_wait_time')
-        self.wait.write(wait_time_us)
+        
+        # Convert into int the value if it is not already an int
+        if not( type(wait_time_us) == int):
+            self.wait.write( int(wait_time_us)) 
+        else:
+            self.wait.write(wait_time_us)
+            
+        
         
     def set_counting_mode(self, boolean):
         """

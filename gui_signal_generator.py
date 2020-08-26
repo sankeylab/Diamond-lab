@@ -46,7 +46,7 @@ class signal_generator_api(_mp.visa_tools.visa_api_base):
         elif 'SMB100A' in self.idn:
             _debug('signal_generator_api.__init__() I choose you smb100a')
             self._api = smb100a_api()  
-        elif 'GPIB0::28' in self.idn:
+        elif 'SMIQ03B' in self.idn:
             _debug('signal_generator_api.__init__() I choose you simq03b')
             self._api = simq03b_api()
             
@@ -1011,7 +1011,7 @@ class anapico_api(_mp.visa_tools.visa_api_base):
 
 class simq03b_api(_mp.visa_tools.visa_api_base):    
     """
-    API for SMA100B. This object just defines the functions to be used by the
+    API for SMIQ03B. This object just defines the functions to be used by the
     base class signal_generator_api.
     """
     def __init__(self): return
@@ -1020,11 +1020,11 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Resets the device to factory defaults (RF off).
         """
-        _debug('api.reset()')
+        _debug('simq03b_api.reset')
         self.write('*RST')
         self.query('*IDN?') # Pauses operation until fully reset?
     
-    def send_list(self, frequencies=[1e9,2e9,3e9,4e9], powers=[-10,-5,-2,0], dwell=1000, delay=0):
+    def send_list(self, frequencies=[1e9,2e9,3e9,4e9], powers=[-10,-5,-2,0], dwell=0.01, delay=0):
         """
         Sends the specified list values.
         
@@ -1036,22 +1036,22 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         powers=[0,0,0,0]
             List of power values (dBm) to touch.
         
-        dwell=0
-            In immediate mode for the list sweep, this is how long the generator
+        dwell=0 
+            (IN second!) In immediate mode for the list sweep, this is how long the generator
             will dwell on a given step.
         
         delay=0
             How long to delay after triggering the next step.
         """
-        _debug('api.send_list()')
+        _debug('simq03b_api.send_list')
         
         # Handle integers or lists for either frequencies or powers
         if not _s.fun.is_iterable(frequencies): frequencies = [frequencies]
         if not _s.fun.is_iterable(powers):      powers      = [powers]
         
         # Handle numpy arrays
-        if not type(frequencies) == 'list': frequencies = list(frequencies)
-        if not type(powers)      == 'list': powers      = list(powers)
+        if not type(frequencies) == list: frequencies = list(frequencies)
+        if not type(powers)      == list: powers      = list(powers)
         
         # Handle length-1 arrays:
         if len(frequencies) == 1: frequencies = frequencies*len(powers)
@@ -1066,22 +1066,30 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         #So I track the initial mode to put it back at the end. 
         initial_mode = self.get_mode()
         
-        #First choose a list, otherwise SMA100B is mad
+        # Let's choose a list. 
         #To know the available list, the query is 'SOUR1:LIST:CAT?'
-        self.write('SOUR1:LIST:SEL "/var/user/list1.lsw"') 
+        self.write('SOUR:LIST:SEL /VAR/USE') 
          
         #Prepare the strings for the list command
-        str_freq = 'SOUR1:LIST:FREQ ' + str(frequencies[0]) #String for the frequency list command
-        str_pow = 'SOUR1:LIST:POW ' + str(powers[0]) #String for the power list command
-        str_dwell = 'SOUR1:LIST:DWEL:LIST '+str(dwell) #String for the dwell list command
+        str_freq = 'SOUR:LIST:FREQ ' + str(frequencies[0]) #String for the frequency list command
+        str_pow   = 'SOUR:LIST:POW ' + str(powers[0]) #String for the power list command
+        str_dwell = 'SOUR:LIST:DWEL '+str(dwell) #String for the dwell list command
         for i in range(1,len(frequencies)):
             str_freq += ', ' + str(frequencies[i])
             str_pow += ', ' + str(powers[i])
-            str_dwell += ', '+str(dwell)
+        
+        # For debugging
+        print(str_freq)
+        print(str_pow)
+        print(str_dwell)
         
         self.write(str_freq)
         self.write(str_pow)
         self.write(str_dwell)
+        
+        # In SMIQ manual, it says:
+        # Caution: This command has to be given after every creating and changing of a list.
+        self.write('SOUR:LIST:LEARn')
         
         #Apparently the SMA change to Fixed mode after the power and the Dwell list is send... 
         #So I just switch back to the initial mode to make sure we end up in the same state. 
@@ -1097,7 +1105,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         mode='List'
             Set to 'Fixed' for fixed mode.
         """
-    
+        _debug('simq03b_api.set_mode')
+        
         #If we choose list mode    
         if mode.lower() == 'list':
             #First choose a list if there was no, otherwise SMA100B is mad
@@ -1106,15 +1115,17 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
             
             self.write('OUTP1:STAT ON') #Somehow the SMA100B wants the RF to be ON for switching into list mode.
             self.write('SOUR1:LIST:MODE STEP') #Make Step mode in order to not automatically sweep all the frequencies
-            self.write('SOURce1:FREQuency:MODE LIST')
+            self.write('SOURce:FREQuency:MODE LIST')
         else:
             #CW and FIXed are synonyms for SMA100B
-            self.write('SOURce1:FREQuency:MODE CW')
+            self.write('SOURce:FREQuency:MODE CW')
     
     def get_mode(self):
         """
         Returns 'Fixed' or 'List' depending on the device mode.
         """
+        _debug('simq03b_api.get_mode')
+        
         s = self.query('FREQ:MODE?')
         if s == None: return None
         
@@ -1135,6 +1146,7 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         n=0
             0-referenced index.
         """
+        _debug('simq03b_api.set_list_index')
         #We have to be in step mode for being able to set the list index
         self.write('SOUR1:LIST:MODE STEP') #Have to be in STEP mode in order to select the index
         self.write('SOUR1:LIST:IND '+ str(int(n)) ) 
@@ -1143,6 +1155,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Gets the current list index.
         """
+        _debug('simq03b_api.get_list_index')
+        
         s = self.query('LIST:IND?')
         return int(s)
     
@@ -1150,17 +1164,22 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Turns the output on or off.
         """
+        _debug('simq03b_api.set_output')
+        
         #Note that, for SMA, switiching off the output set the automatically the mode to Fixed.... !!
-        if on: self.write("OUTP1:STAT ON")
-        else:  self.write("OUTP1:STAT OFF")
+        if on: self.write("OUTP:STAT ON")
+        else:  self.write("OUTP:STAT OFF")
         
 
     def get_output(self):
         """
         Returns 0 or 1 based on the RF output state.
         """
-        x = self.query('OUTP1:STAT?')
+        _debug('simq03b_api.get_output')
+        
+        x = self.query('OUTP:STAT?')
         if x == None: return None
+        print('Result is ', x) # For knowing the bug that we something have
         return int(x)
 
     def set_frequency(self, f=1e9):
@@ -1172,12 +1191,16 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         f=1e9
             Frequency (Hz)
         """
+        _debug('simq03b_api.set_frequency')
+        
         self.write('SOUR:FREQ:CW '+str(f))
         
     def get_frequency(self):
         """ 
         Returns the current frequency (Hz).
         """
+        _debug('simq03b_api.get_frequency')
+        
         x = self.query('SOUR:FREQ:CW?')
         if x == None: return None
         return float(x)
@@ -1186,13 +1209,17 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Sets the output power to the specified value (dBm).
         """
-        self.write("SOURce1:POWer:POWer "+str(dbm))
+        _debug('simq03b_api.set_power')
+        
+        self.write("POWer "+str(dbm))
     
     def get_power(self):
         """
         Returns the current power level (dBm).
         """
-        x = self.query('SOURce1:POWer:POWer?')
+        _debug('simq03b_api.get_power')
+        
+        x = self.query('POWer?')
         if x == None: return None
         return float(x)
     
@@ -1200,7 +1227,9 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Gets the list of powers.
         """
-        s = self.query('SOUR1:LIST:POW?')
+        _debug('simq03b_api.get_list_powers')
+        
+        s = self.query('SOUR:LIST:POW?')
         if s == None: return None
         a = []
         n = 0
@@ -1216,7 +1245,9 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Gets the list of frequencies.
         """
-        s = self.query('SOUR1:LIST:FREQ?')
+        _debug('simq03b_api.get_list_frequencies')
+        
+        s = self.query('SOUR:LIST:FREQ?')
         if s == None: return None
         a = []
         n = 0
@@ -1232,6 +1263,8 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         """
         Returns the size of the list sweep.
         """
+        _debug('simq03b_api.get_list_length')
+        
         s = self.query('SOUR1:LIST:FREQ:POIN?')
         if s == None: return None
         return int(s)
@@ -1465,8 +1498,8 @@ class GUISignalGenerator(_mp.visa_tools.visa_gui_base):
         
         self.settings.add_parameter('Generate-List/f1',    1.0e9, bounds=(1.0,20e9), siPrefix=True, suffix='Hz', dec=True)
         self.settings.add_parameter('Generate-List/f2',   10.0e9, bounds=(1.0,20e9), siPrefix=True, suffix='Hz', dec=True)
-        self.settings.add_parameter('Generate-List/P1',      -30, bounds=(-30,25),   suffix=' dBm')
-        self.settings.add_parameter('Generate-List/P2',      -30, bounds=(-30,25),   suffix=' dBm')
+        self.settings.add_parameter('Generate-List/P1',      -30, bounds=(-30,25),   suffix='dBm', type='float')
+        self.settings.add_parameter('Generate-List/P2',      -30, bounds=(-30,25),   suffix='dBm', type='float')
         self.settings.add_parameter('Generate-List/Steps',   100, bounds=(2, 10000))
         self.settings.add_parameter('Generate-List/Direction', 0, values=['1->2', '2->1'])
         self.settings.add_parameter('Generate-List/Mode',      0, values=['Linear', 'Log'])
@@ -1886,6 +1919,11 @@ if __name__ == '__main__':
     #self = GUISignalGenerator()
     #self = signal_generator_api('SMA100B') #This will not pop-out the GUI
     self = GUISignalGenerator('Anana') #This will pop-out the GUI
+    
+    # Note the api for quickly make tests
+    # For sending query, type a.query(YOUR_QUERY)
+    # For writting thing, type a.write(YOUR_QUERY)
+    a = self.api 
    
    
    
