@@ -6,6 +6,7 @@ Created on Fri Aug 21 10:41:45 2020
 """
 
 from api_actuator import ApiActuator
+from prepare_mag_sweep_lines import plot_magSweepLinesSettings
 import spinmob     as _s
 from spinmob import egg
 import time
@@ -331,15 +332,17 @@ class GUIMagnetSweepLines(egg.gui.Window):
         
         #Load the list. 
         self.databox_settings = _s.data.load(text='Load the set of lines to sweep')
+        self.path_setting = self.databox_settings.path
         #Set the text. If sucess, the text is the name of the file. Otherwise it is an error message. 
-        self.label_load_file.set_text( self.databox_settings.path.split('/')[-1] )
+        self.label_load_file.set_text( self.path_setting.split('/')[-1] )
         
     def button_look_setting_clicked(self):
         """
         Show the lines that the magnet should follow
         """
         _debug('GUIMagnetSweepLines: button_look_setting_clicked')
-        #
+        # Pop up a GUI
+        plot_magSweepLinesSettings(self.databox_settings, self.path_setting)
         
         
     def scan_xyz_line(self, xend=0, yend=0, zend=0, speed=1, N=10):

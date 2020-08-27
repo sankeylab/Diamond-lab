@@ -15,6 +15,18 @@ import spinmob as _s
 from mpl_toolkits.mplot3d import Axes3D # This import registers the 3D projection, but is otherwise unused.
 import matplotlib.pyplot as plt
 
+import traceback
+_p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
+
+# Debug stuff.
+_debug_enabled                = False
+
+def _debug(*a):
+    if _debug_enabled: 
+        s = []
+        for x in a: s.append(str(x))
+        print(', '.join(s))
+
 #TODO create a general function for a plane perpendicular to a given normal direction
 
 def tilted_plane():
@@ -77,6 +89,44 @@ def parallel_plane():
     return xs, ys, zs
 
 
+def plot_magSweepLinesSettings(databox, title='Patate Chaude'):
+    """
+    Plot the lines that we aim to sweep. 
+    """
+    
+    xs = databox['xs']
+    ys = databox['ys']
+    zs = databox['zs']   
+
+    # Initialize the figure and axis
+    fig = plt.figure(tight_layout=True)
+    ax  = fig.add_subplot(111, projection='3d') 
+
+    ax.plot(xs, ys, zs, label='Goal') 
+    ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], '-r') 
+    ax.scatter(xs[0], ys[0], zs[0]   , color='red',label='Start')
+    ax.scatter(xs[-1], ys[-1], zs[-1], color='y'  ,label='End')
+    plt.legend()
+    ax.set_xlabel('x (mm)')
+    ax.set_ylabel('y (mm)')
+    ax.set_zlabel('z (mm)')
+    # Set equal aspect
+    # For this we need the extermum of all the pts
+    allpts = np.concatenate((xs, ys, zs))
+    maximum = np.max(allpts)
+    minimum = np.min(allpts)
+    ax.set_xlim3d(minimum, maximum)
+    ax.set_ylim3d(minimum, maximum)
+    ax.set_zlim3d(minimum, maximum)
+    # Slice the title if it's too long (for example, by including the whol path)
+    if len(title)>20:
+        t1 = title[:int(len(title)/2)]
+        t2 = title[int(len(title)/2):]
+        title = t1+'\n'+t2
+        
+    ax.set_title(title, fontsize=10) 
+    
+
 #By default set the object
 if __name__ == '__main__':
     _debug_enabled = True    
@@ -95,25 +145,8 @@ if __name__ == '__main__':
     # Save it
     databox.save_file()
 
+    plot_magSweepLinesSettings(databox, 'My path')
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')   
-    ax.plot(xs, ys, zs, label='Goal') 
-    ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], '-r') 
-    ax.scatter(xs[0], ys[0], zs[0]   , color='red',label='Start')
-    ax.scatter(xs[-1], ys[-1], zs[-1], color='y'  ,label='End')
-    plt.legend()
-    ax.set_xlabel('x (mm)')
-    ax.set_ylabel('y (mm)')
-    ax.set_zlabel('z (mm)')
-    # Set equal aspect
-    # For this we need the extermum of all the pts
-    allpts = np.concatenate((xs, ys, zs))
-    maximum = np.max(allpts)
-    minimum = np.min(allpts)
-    ax.set_xlim3d(minimum, maximum)
-    ax.set_ylim3d(minimum, maximum)
-    ax.set_zlim3d(minimum, maximum)
 
 
 
