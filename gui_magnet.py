@@ -309,36 +309,20 @@ class GUIMagnetSweepLines(egg.gui.Window):
         egg.gui.Window.__init__(self, title=name, size=size)
         
         #Add a button for loading the data
-        self.button_load_list   = self.place_object(egg.gui.Button('Load list', checkable=True), 2,0).set_width(100)
+        self.button_load_list   = self.place_object(egg.gui.Button('Load list'), 2,0).set_width(100)
         self.connect(self.button_load_list.signal_clicked, self.button_load_list_clicked )
 
-        #Add a button for loading the data
-        self.button_test  = self.place_object(egg.gui.Button('Prepare'), 2,1)
-        self.connect(self.button_test.signal_clicked, self.button_test_clicked )
+        #Add a button for looking at the settings
+        self.button_look_setting  = self.place_object(egg.gui.Button('Look the settings'), 2,1)
+        self.connect(self.button_look_setting.signal_clicked, self.button_look_setting_clicked )
         
         
-        self.button_scan_magnet = self.place_object(egg.gui.Button('Scan Magnet', checkable=True), 3,1).set_width(150)
+        self.button_scan_magnet = self.place_object(egg.gui.Button('Scan Magnet'), 3,1).set_width(150)
         self.button_scan_magnet.signal_toggled.connect(self.button_scan_magnet_clicked)   
         
         # Add a label
         self.label_load_file    = self.place_object(egg.gui.Label('No File loaded ;)'), 3,0 )
 
-
-    def button_test_clicked(self):
-        """
-        Test to generate the data for scanning. 
-        """
-        
-        self.databox = _s.data.databox()
-        self.databox.insert_header('name', 'Hakuna matata')
-        
-        # Add each column
-        self.databox['xs'] = np.linspace(0, 4, 13)
-        self.databox['ys'] = np.linspace(0, 4, 13)+1
-        self.databox['zs'] = np.linspace(0, 4, 13)*0+13
-        
-        
-        
     def button_load_list_clicked(self, *a):
         """
         Load a list of x,y,z points for the magnetic field sweep
@@ -346,12 +330,18 @@ class GUIMagnetSweepLines(egg.gui.Window):
         _debug('GUIMagnetSweepLines._button_load_list_toggled()')
         
         #Load the list. 
-        self.d = _s.data.load(text='Load the set of lines to sweep')
+        self.databox_settings = _s.data.load(text='Load the set of lines to sweep')
         #Set the text. If sucess, the text is the name of the file. Otherwise it is an error message. 
-        self.label_load_file.set_text( self.fill_table_positions(self.d) )
-        #Uncheck the button
-        self.button_load_list  .set_checked(False,  block_events=True).enable()
-
+        self.label_load_file.set_text( self.databox_settings.path.split('/')[-1] )
+        
+    def button_look_setting_clicked(self):
+        """
+        Show the lines that the magnet should follow
+        """
+        _debug('GUIMagnetSweepLines: button_look_setting_clicked')
+        #
+        
+        
     def scan_xyz_line(self, xend=0, yend=0, zend=0, speed=1, N=10):
         """
         Move in a straight line from the current position to the target position. 
@@ -701,52 +691,7 @@ if __name__ == '__main__':
     self = GUIMagnet(name='Magnetooooo') 
     self.show()
     
-#    # Check the trajectory 
-#    from mpl_toolkits.mplot3d import Axes3D # This import registers the 3D projection, but is otherwise unused.
-#    import matplotlib.pyplot as plt
-##    fig = plt.figure()
-##    ax = fig.add_subplot(111, projection='3d')   
-##    ax.scatter(self.xs[1:-1], self.ys[1:-1], self.zs[1:-1]) 
-##    ax.scatter(self.xs[0], self.ys[0], self.zs[0], color='red',label='First')
-##    ax.scatter(self.xs[-1], self.ys[-1], self.zs[-1], color='y',label='End')
-##    ax.plot([self.xin,self.xend], [self.yin,self.yend], [self.zin,self.zend], label='Goal')
-##    plt.legend()
-##    ax.set_xlabel('x (mm)')
-##    ax.set_ylabel('y (mm)')
-##    ax.set_zlabel('z (mm)')
-##    # Set equal aspect
-##    # First get the extermum of all the pts
-##    allpts = np.concatenate((self.xs, self.ys, self.zs))
-##    maximum = np.max(allpts)
-##    minimum = np.min(allpts)
-##    ax.set_xlim3d(minimum, maximum)
-##    ax.set_ylim3d(minimum, maximum)
-##    ax.set_zlim3d(minimum, maximum)
-#    
-#    # Test many scan
-#    xtots = []
-#    ytots = []
-#    ztots = []
-#    # Try a plane
-#    x1 = 10
-#    x2 = 17
-#    z1 = 15
-#    z2 = 22
-#    ys = np.linspace(14, 19, 10)
-#    # First reach the initial position
-#    self.go_to_xyz(x1, ys[0], z1, want_wait=True)
-#    for i in range(int(len(ys)/2)):
-#        y1 = ys[2*i]
-#        y2 = ys[2*i+1]
-#        # Make a zigzage following the y axis
-#        self.scan_xyz_line(x2, y2, z2, speed=1, N=40)
-#        xtots.extend(self.xs)
-#        ytots.extend(self.ys)
-#        ztots.extend(self.zs)
-#        self.scan_xyz_line(x1, y1, z1, speed=1, N=40)
-#        xtots.extend(self.xs)
-#        ytots.extend(self.ys)
-#        ztots.extend(self.zs)
+
 #        
 #    fig = plt.figure()
 #    ax = fig.add_subplot(111, projection='3d')   
