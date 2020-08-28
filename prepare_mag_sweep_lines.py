@@ -138,20 +138,21 @@ def plot_magSweepLinesResult(dataResult, settings=-1, title='Patate Chaude'):
     xs = dataResult['xs']
     ys = dataResult['ys']
     zs = dataResult['zs']   
+    ws = dataResult['ws'] # The color of the point will be that
 
     # Initialize the figure and axis
     fig = plt.figure(tight_layout=True)
     ax  = fig.add_subplot(111, projection='3d') 
 
-    ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], label='Scanned points') 
-    ax.scatter(xs[0], ys[0], zs[0]   , color='red',label='Start')
-    ax.scatter(xs[-1], ys[-1], zs[-1], color='y'  ,label='End')
+    ax.scatter(xs, ys, zs, c=ws,label='Scanned points') 
     if settings !=-1:
         # Show the settings if we input some
         xs_goal = settings['xs']
         ys_goal = settings['ys']
         zs_goal = settings['zs']
-        ax.plot(xs_goal, ys_goal, zs_goal, label='Goal') 
+        ax.plot(xs_goal[1:-1], ys_goal[1:-1], zs_goal[1:-1], label='Goal') 
+        ax.scatter(xs_goal[0], ys_goal[0], zs_goal[0]   , color='red',label='Start')
+        ax.scatter(xs_goal[-1], ys_goal[-1], zs_goal[-1], color='y'  ,label='End')        
         
     plt.legend()
     ax.set_xlabel('x (mm)')

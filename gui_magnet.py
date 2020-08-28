@@ -314,6 +314,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.nb_iter = 0 # How many iteration to perform (number of lines to scan)
         self.path_setting = 'Data: No File loaded ;)' # This is the string for the path of the data
         self.statut = 'Waiting for settings.' # This will inform where we are in the tasks
+        self.data_w = 0 # This is the 4-dimensional data to take at each magnet posiiont. Example: the photo-counts at each position. 
+        self.info_date = 'No scan' # String for the data at which the scan is done
         
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -430,10 +432,12 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.databox_save_scan = _s.data.databox()
         # Put some header
         self.databox_save_scan.insert_header('name', 'Hakuna matata')
+        self.databox_save_scan.insert_header('date', self.info_date)
         # Add each column
         self.databox_save_scan['xs'] = self.xs_scanned
         self.databox_save_scan['ys'] = self.ys_scanned
         self.databox_save_scan['zs'] = self.zs_scanned  
+        self.databox_save_scan['ws'] = self.ws_scanned  
         
         # Pop up the window for saving the data
         self.databox_save_scan.save_file()
@@ -507,6 +511,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
             self.xs_scanned = []
             self.ys_scanned = []
             self.zs_scanned = []
+            # This will store the 4-Dimensional data, for example the photo-counts
+            self.ws_scanned = []
             # Increase ther iteration for not scanning the first poitn to the first point !
             self.iter = 1
             
@@ -524,20 +530,25 @@ class GUIMagnetSweepLines(egg.gui.Window):
             x = self.xs_setting[self.iter]
             y = self.ys_setting[self.iter]
             z = self.zs_setting[self.iter]
-            xyz = self.scan_single_line(x,y,z, 
+            xyzw = self.scan_single_line(x,y,z, 
                                         speed=self.speed, N=self.NperLine)
             # Append the point
-            self.xs_scanned.extend(xyz[0])
-            self.ys_scanned.extend(xyz[1])
-            self.zs_scanned.extend(xyz[2])
+            self.xs_scanned.extend(xyzw[0])
+            self.ys_scanned.extend(xyzw[1])
+            self.zs_scanned.extend(xyzw[2])
+            self.ws_scanned.extend(xyzw[3])
             
             # Update the condition of the scan
             self.iter += 1
             condition = self.is_running and self.iter<self.nb_iter
             
+        # Update the data
+        self.info_date = time.ctime(time.time())
         _debug('GUIMagnetSweepLines: run_sweep: done')
-        # Reset everything 
-        self.button_reset_clicked()
+        # If the scan is finished
+        if self.iter>=self.nb_iter:
+            # Reset everything 
+            self.button_reset_clicked()
         
     def scan_single_line(self, xend=0, yend=0, zend=0, speed=1, N=10):
         """
@@ -555,9 +566,10 @@ class GUIMagnetSweepLines(egg.gui.Window):
             Number of points to record
             
         The function returns:
-            xzy:
-                A tuple (xs, ys, zs), where xs, ys and zs are array for the 
-                positions of the actuator at each checkpoint. 
+            xzyw:
+                A tuple (xs, ys, zs, ws), where xs, ys and zs are array for the 
+                positions of the actuator at each checkpoint. ws is the array 
+                of the 4-dimension data taken (for example, the counts)
         """
         _debug('GUIMagnetSweepLines: scan_xyz_line')
         
@@ -592,7 +604,9 @@ class GUIMagnetSweepLines(egg.gui.Window):
         xs = []
         ys = []
         zs = []
-
+        # This will store the 4-dimension data at each x,y,z. For example, the photo-counts
+        ws = [] 
+ 
         self.dt = self.T/N # How much time to wait between points
          #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
         self.process_events()        
@@ -620,8 +634,9 @@ class GUIMagnetSweepLines(egg.gui.Window):
              #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
             self.process_events()
             
-            # Call a signal
+            # Call a signal 
             self.event_scan_line_checkpoint()
+            ws.append(self.data_w)
             
             # Note the condition for keeping doing
             # As long as the three actuator move
@@ -632,7 +647,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
         
         _debug('GUIMagnetSweepLines: scan_xyz_line: Done')
         
-        return (xs, ys, zs)
+        return (xs, ys, zs, ws)
         
     def event_scan_line_checkpoint(self):
         """
@@ -643,6 +658,9 @@ class GUIMagnetSweepLines(egg.gui.Window):
         _debug('GUIMagnetSweepLines: event_scan_line_checkpoint')
         print('Hey congratulation! You are at iteration ', self.iter)
         
+        # fake 4-dimensional data. This should be overid, for example, by the 
+        # photocounts
+        self.data_w = np.random.poisson(1000)
         
 class GUIMagnetListSweep(egg.gui.Window):
     """

@@ -83,7 +83,9 @@ class GUIMainExperiment(egg.gui.Window):
         self.gui_confocal   = gui_confocal_main.GUIMainConfocal(self.fpga)
         self.gui_pulser     = gui_pulser.  GuiMainPulseSequence(self.fpga)
         self.gui_saturation = gui_saturation.     GUISaturation(self.fpga)
-        self.gui_magnet     = gui_magnet.GUIMagnet().window
+        self.gui_magnet     = gui_magnet.GUIMagnet()
+        #Connect the magnet with the counter
+        self.connect_magnet_with_counter()
         
         # Replace the optimer button outside, for easy access
         self.place_object(self.gui_confocal.gui_optimizer.button_optimize,
@@ -189,6 +191,14 @@ class GUIMainExperiment(egg.gui.Window):
             # Also re-call the method of the confocal, because we just overid it :P 
             self.gui_confocal.after_optimization()
 
+    def connect_magnet_with_counter(self):
+        """
+        Connect the magnet scanner with the counter and etc. 
+        This is done mostly by overriding functions. 
+        """
+        _debug('GUIMainExperiment: connect_magnet_with_counter')
+#        # Overid the function
+#        self.gui_magnet.gui_sweep_lines.event_scan_line_checkpoint = 
      
         
  
