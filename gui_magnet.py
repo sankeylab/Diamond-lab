@@ -494,7 +494,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
             # Extract the settings
             self.NperLine = self.treeDic_settings['N']
             self.speed = self.treeDic_settings['speed']
-
+            # Signal the initialization
+            self.event_initiate_sweep()
             # Go on the initial position 
             self.statut = 'Reaching the initial position'
             self.label_info_update()   
@@ -648,6 +649,15 @@ class GUIMagnetSweepLines(egg.gui.Window):
         _debug('GUIMagnetSweepLines: scan_xyz_line: Done')
         
         return (xs, ys, zs, ws)
+    
+    def event_initiate_sweep(self):
+        """
+        Dummy function to be overrid. 
+        This is called when we start the sweep. 
+        For example, this can be overideen to prepare the photocounter. 
+        """
+        _debug('GUIMagnetSweepLines: event_scan_initiate_sweep')
+        print('Congratulation ! Its a neodymium !')
         
     def event_scan_line_checkpoint(self):
         """
