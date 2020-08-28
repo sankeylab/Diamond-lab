@@ -335,6 +335,10 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.button_look_setting = self.place_object(egg.gui.Button('Look the settings'), 
                                                      1,1, alignment=1)
         self.connect(self.button_look_setting.signal_clicked, self.button_look_setting_clicked )
+        #Add a button for comparing the scan and with the setting
+        self.button_compare = self.place_object(egg.gui.Button('Compare scan and settings'), 
+                                                     2,1, alignment=1)
+        self.connect(self.button_compare.signal_clicked, self.button_compare_clicked )
         #Add a button for saving the scanned data
         self.button_save_sweep = self.place_object(egg.gui.Button('Save sweep :D'),
                                                   2,0, alignment=1)
@@ -405,12 +409,16 @@ class GUIMagnetSweepLines(egg.gui.Window):
         # Pop up a GUI
         plot_magSweepLinesSettings(self.databox_settings, self.path_setting)
         
-    def button_look_scan_clicked(self):
+    def button_compare_clicked(self):
         """
         Compare the scanned data to the settings 
         """
+        # Load the scanned data
+        d_scanned_data = _s.data.load(text='Load a scanned data set')
+        # Load the setting
+        d_settings     = _s.data.load(text='Load the settong fpor comparison')
         # Pop up a GUI
-        plot_magSweepLinesResult(self.databox_save_scan, self.databox_settings)
+        plot_magSweepLinesResult(d_scanned_data, d_settings)
 
     def button_save_sweep_clicked(self):
         """
