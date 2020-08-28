@@ -143,7 +143,7 @@ def plot_magSweepLinesResult(dataResult, settings=-1, title='Patate Chaude'):
     fig = plt.figure(tight_layout=True)
     ax  = fig.add_subplot(111, projection='3d') 
 
-    ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], '-r') 
+    ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], label='Scanned points') 
     ax.scatter(xs[0], ys[0], zs[0]   , color='red',label='Start')
     ax.scatter(xs[-1], ys[-1], zs[-1], color='y'  ,label='End')
     if settings !=-1:

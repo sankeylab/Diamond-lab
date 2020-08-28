@@ -6,7 +6,7 @@ Created on Fri Aug 21 10:41:45 2020
 """
 
 from api_actuator import ApiActuator
-from prepare_mag_sweep_lines import plot_magSweepLinesSettings
+from prepare_mag_sweep_lines import plot_magSweepLinesSettings, plot_magSweepLinesResult
 import spinmob     as _s
 from spinmob import egg
 import time
@@ -192,7 +192,7 @@ class GUIMagnet(egg.gui.Window):
     Class that combines 3 actuator GUIs in order to control the position of the magnet.  
     """
     
-    def __init__(self, name='Magnet', size=[1300,600]):
+    def __init__(self, name='Magnet', size=[1300,800]):
         """
         Create the GUI 
         """
@@ -313,6 +313,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.iter = 0 # At which iteration we are on
         self.nb_iter = 0 # How many iteration to perform (number of lines to scan)
         self.path_setting = 'Data: No File loaded ;)' # This is the string for the path of the data
+        self.statut = 'Waiting for settings.' # This will inform where we are in the tasks
         
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -366,6 +367,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
         """
         #Set the text. If sucess, the text is the name of the file. Otherwise it is an error message. 
         txt = ('Settings: '+ self.path_setting.split('/')[-1]+
+               '\nStatut: '+ self.statut +
                '\nNumber of lines: %d'%self.nb_iter+
                '\nCurrent line: %d'%self.iter)
         
@@ -388,6 +390,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.nb_iter = len(self.xs_setting)
         
         #Updat the info shown
+        self.statut = 'Settings are now loaded'
         self.label_info_update()
         
         # Enable the run button, since we now have data
@@ -401,6 +404,13 @@ class GUIMagnetSweepLines(egg.gui.Window):
         _debug('GUIMagnetSweepLines: button_look_setting_clicked')
         # Pop up a GUI
         plot_magSweepLinesSettings(self.databox_settings, self.path_setting)
+        
+    def button_look_scan_clicked(self):
+        """
+        Compare the scanned data to the settings 
+        """
+        # Pop up a GUI
+        plot_magSweepLinesResult(self.databox_save_scan, self.databox_settings)
 
     def button_save_sweep_clicked(self):
         """
@@ -414,8 +424,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.databox_save_scan.insert_header('name', 'Hakuna matata')
         # Add each column
         self.databox_save_scan['xs'] = self.xs_scanned
-        self.databox_save_scan['ys'] = self.xs_scanned
-        self.databox_save_scan['zs'] = self.xs_scanned  
+        self.databox_save_scan['ys'] = self.ys_scanned
+        self.databox_save_scan['zs'] = self.zs_scanned  
         
         # Pop up the window for saving the data
         self.databox_save_scan.save_file()
@@ -433,6 +443,9 @@ class GUIMagnetSweepLines(egg.gui.Window):
         # Stop to run 
         if self.is_running:
             self.button_run_clicked()
+
+        self.statut = 'Sweep is resetted'
+        self.label_info_update()   
         
         # Reupdate the button, because the if was not met the first time. 
         self.button_run.set_text('Start')
@@ -471,6 +484,13 @@ class GUIMagnetSweepLines(egg.gui.Window):
             self.speed = self.treeDic_settings['speed']
 
             # Go on the initial position 
+            self.statut = 'Reaching the initial position'
+            self.label_info_update()   
+            # Have a descent speed
+            self.X.settings['Motion/Speed'] = 1 # mm/sec
+            self.Y.settings['Motion/Speed'] = 1 # mm/sec
+            self.Z.settings['Motion/Speed'] = 1 # mm/sec
+            # Then reach the position
             self.magnet.go_to_xyz(self.xs_setting[0],
                                   self.ys_setting[0],
                                   self.zs_setting[0],
@@ -490,6 +510,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
             # Allow the GUI to update. This is important to avoid freezing of the GUI inside loops
             self.process_events()    
             # Update the info shown
+            self.statut = 'Sweeping along a line'
             self.label_info_update()
             # Move along the line
             x = self.xs_setting[self.iter]
@@ -586,6 +607,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
             xs.append( self.X.api.get_position() )
             ys.append( self.Y.api.get_position() )
             zs.append( self.Z.api.get_position() )
+            _debug('GUIMagnetSweepLines: scan_xyz_line: Done')
+            _debug('GUIMagnetSweepLines: scan_xyz_line: %f %f %f'%(xs[-1], ys[-1], zs[-1]))
              #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
             self.process_events()
             

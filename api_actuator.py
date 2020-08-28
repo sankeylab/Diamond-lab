@@ -173,7 +173,9 @@ class CONEX_api(_mp.visa_tools.visa_api_base):
         elif strState == '0A':
             return 'NOT REFERENCED from RESET'
         elif strState == '3C':
-            return 'DISABLE from READY.'        
+            return 'DISABLE from READY.'     
+        elif strState == '0E':
+            return 'NOT REFERENCED from READY.'    
         else:
             return strState #Return the number that we can looking in the manual under the description of the command 'TS'
     
