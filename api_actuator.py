@@ -159,6 +159,8 @@ class CONEX_api(_mp.visa_tools.visa_api_base):
         """
         _debug('CONEX_api.get_state()')
         
+        # For knowing the meaning of the returned string, look at p.50 of the 
+        # controller documentation. 
         strState = self.query('1TS?)')[7:9] #This extract a number corresponding to the state. 
         if strState == '33':
             return 'READY from MOVING'
@@ -170,6 +172,8 @@ class CONEX_api(_mp.visa_tools.visa_api_base):
             return 'HOMING'
         elif strState == '0A':
             return 'NOT REFERENCED from RESET'
+        elif strState == '3C':
+            return 'DISABLE from READY.'        
         else:
             return strState #Return the number that we can looking in the manual under the description of the command 'TS'
     
