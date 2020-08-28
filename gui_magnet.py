@@ -311,6 +311,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
         # Some useful attribute
         self.is_running = False # Tell is the sweep is running
         self.iter = 0 # At which iteration we are on
+        self.nb_iter = 0 # How many iteration to perform (number of lines to scan)
+        self.path_setting = 'Data: No File loaded ;)' # This is the string for the path of the data
         
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -319,31 +321,58 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.button_run = self.place_object(egg.gui.Button('Start'), 
                                             0,0, alignment=1)
         self.button_run.disable() # Disable until we have imported or set the settings
-        self.button_run.signal_toggled.connect(self.button_run_clicked)   
+        self.connect(self.button_run.signal_clicked, self.button_run_clicked )  
         # A Button for resetting the sweep
         self.button_reset = self.place_object(egg.gui.Button('Reeeset'), 
                                               0,1, alignment=1)
         self.button_reset.signal_toggled.connect(self.button_reset_clicked)   
-        
         #Add a button for loading the data
-        self.button_load_list = self.place_object(egg.gui.Button('Load settings'),
+        self.button_load_settings = self.place_object(egg.gui.Button('Load settings'),
                                                   1,0, alignment=1)
-        self.connect(self.button_load_list.signal_clicked, self.button_load_list_clicked )
+        self.connect(self.button_load_settings.signal_clicked, self.button_load_settings_clicked )
         #Add a button for looking at the settings
         self.button_look_setting = self.place_object(egg.gui.Button('Look the settings'), 
                                                      1,1, alignment=1)
         self.connect(self.button_look_setting.signal_clicked, self.button_look_setting_clicked )
-        # Attempt to make the button together
-        self.set_row_stretch(2, 10)
-        self.set_column_stretch(2, 10)
-
+        #Add a button for saving the scanned data
+        self.button_save_sweep = self.place_object(egg.gui.Button('Save sweep :D'),
+                                                  2,0, alignment=1)
+        self.connect(self.button_save_sweep.signal_clicked, self.button_save_sweep_clicked )
         
-        # Add a label
-        txt = 'Data: No File loaded ;)'
-        self.label_info = self.place_object(egg.gui.Label(txt), 2,0 )
-            
+        # tree dictionnarry for some settings
+        self.treeDic_settings = egg.gui.TreeDictionary(autosettings_path='setting_magSweepLines')
+        self.place_object(self.treeDic_settings, row=3, column=0, column_span=2)
 
-    def button_load_list_clicked(self, *a):
+        self.treeDic_settings.add_parameter('speed', 0.5, 
+                                            type='float', step=0.01, 
+                                            bounds=[0,2], suffix=' mm/s',
+                                            tip='Speed along the lines') 
+        self.treeDic_settings.add_parameter('N', 10, 
+                                            type='int', 
+                                            bounds=[2,None],
+                                            tip='Number of point to recored along each line swept')
+        # Add a label
+        self.label_info = self.place_object(egg.gui.Label(), 1,2 )
+        self.label_info_update() 
+        
+        # Attempt to make the button together
+        self.set_row_stretch(3, 10)
+        self.set_column_stretch(2, 10)        
+        
+            
+    def label_info_update(self):
+        """
+        Adjust the info shown with respect to the settings
+        """
+        #Set the text. If sucess, the text is the name of the file. Otherwise it is an error message. 
+        txt = ('Settings: '+ self.path_setting.split('/')[-1]+
+               '\nNumber of lines: %d'%self.nb_iter+
+               '\nCurrent line: %d'%self.iter)
+        
+        self.label_info.set_text( txt ) 
+        
+        
+    def button_load_settings_clicked(self, *a):
         """
         Load a list of x,y,z points for the magnetic field sweep
         """
@@ -352,8 +381,15 @@ class GUIMagnetSweepLines(egg.gui.Window):
         #Load the list. 
         self.databox_settings = _s.data.load(text='Load the set of lines to sweep')
         self.path_setting = self.databox_settings.path
-        #Set the text. If sucess, the text is the name of the file. Otherwise it is an error message. 
-        self.label_load_file.set_text( self.path_setting.split('/')[-1] )
+        # Get the path 
+        self.xs_setting = self.databox_settings['xs']
+        self.ys_setting = self.databox_settings['ys']
+        self.zs_setting = self.databox_settings['zs']
+        self.nb_iter = len(self.xs_setting)
+        
+        #Updat the info shown
+        self.label_info_update()
+        
         # Enable the run button, since we now have data
         self.button_run.enable()
         self.button_run.set_colors(background='green')
@@ -365,6 +401,25 @@ class GUIMagnetSweepLines(egg.gui.Window):
         _debug('GUIMagnetSweepLines: button_look_setting_clicked')
         # Pop up a GUI
         plot_magSweepLinesSettings(self.databox_settings, self.path_setting)
+
+    def button_save_sweep_clicked(self):
+        """
+        Save the result of the sweep
+        """
+        _debug('GUIMagnetSweepLines: button_save_sweep_clicked')
+        
+        # Prepare the databox to save
+        self.databox_save_scan = _s.data.databox()
+        # Put some header
+        self.databox_save_scan.insert_header('name', 'Hakuna matata')
+        # Add each column
+        self.databox_save_scan['xs'] = self.xs_scanned
+        self.databox_save_scan['ys'] = self.xs_scanned
+        self.databox_save_scan['zs'] = self.xs_scanned  
+        
+        # Pop up the window for saving the data
+        self.databox_save_scan.save_file()
+        
 
     def button_reset_clicked(self):
         """
@@ -411,11 +466,10 @@ class GUIMagnetSweepLines(egg.gui.Window):
         
         # If we are at the begining
         if self.iter == 0:
-            # Get the path 
-            self.xs_setting = self.databox_settings['xs']
-            self.ys_setting = self.databox_settings['ys']
-            self.zs_setting = self.databox_settings['zs']
-            self.nb_iter = len(self.xs_setting)
+            # Extract the settings
+            self.NperLine = self.treeDic_settings['N']
+            self.speed = self.treeDic_settings['speed']
+
             # Go on the initial position 
             self.magnet.go_to_xyz(self.xs_setting[0],
                                   self.ys_setting[0],
@@ -425,16 +479,24 @@ class GUIMagnetSweepLines(egg.gui.Window):
             self.xs_scanned = []
             self.ys_scanned = []
             self.zs_scanned = []
+            # Increase ther iteration for not scanning the first poitn to the first point !
+            self.iter = 1
+            
+        
         
         condition=True
         while condition:
             _debug('GUIMagnetSweepLines: run_sweep: iter', self.iter)
-            
+            # Allow the GUI to update. This is important to avoid freezing of the GUI inside loops
+            self.process_events()    
+            # Update the info shown
+            self.label_info_update()
             # Move along the line
             x = self.xs_setting[self.iter]
             y = self.ys_setting[self.iter]
             z = self.zs_setting[self.iter]
-            xyz = self.scan_single_line(x,y,z, speed=0.5, N=10)
+            xyz = self.scan_single_line(x,y,z, 
+                                        speed=self.speed, N=self.NperLine)
             # Append the point
             self.xs_scanned.extend(xyz[0])
             self.ys_scanned.extend(xyz[1])

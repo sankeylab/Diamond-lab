@@ -59,6 +59,7 @@ def tilted_plane():
         
     return xs, ys, zs
 
+
 def parallel_plane():
     """
     Make a plane parallel to an axis.
@@ -71,9 +72,9 @@ def parallel_plane():
     # Define a plane tilted
     y1 = 14
     y2 = 16.7
-    z1 = 17.5
+    z1 = 23
     z2 = z1
-    x_lines = np.linspace(14, 19, 10)
+    x_lines = np.linspace(14, 19, 4)
     
     for i in range(int(len(x_lines)/2)):
         x1 = x_lines[2*i]
@@ -103,7 +104,7 @@ def plot_magSweepLinesSettings(databox, title='Patate Chaude'):
     ax  = fig.add_subplot(111, projection='3d') 
 
     ax.plot(xs, ys, zs, label='Goal') 
-    ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], '-r') 
+    ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1]) 
     ax.scatter(xs[0], ys[0], zs[0]   , color='red',label='Start')
     ax.scatter(xs[-1], ys[-1], zs[-1], color='y'  ,label='End')
     plt.legend()
@@ -125,7 +126,52 @@ def plot_magSweepLinesSettings(databox, title='Patate Chaude'):
         title = t1+'\n'+t2
         
     ax.set_title(title, fontsize=10) 
+
+def plot_magSweepLinesResult(dataResult, settings=-1, title='Patate Chaude'):
+    """
+    Plot the result of a sweep
     
+    #TODO EXPLAIN THE INPUT
+    
+    """
+    
+    xs = dataResult['xs']
+    ys = dataResult['ys']
+    zs = dataResult['zs']   
+
+    # Initialize the figure and axis
+    fig = plt.figure(tight_layout=True)
+    ax  = fig.add_subplot(111, projection='3d') 
+
+    ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], '-r') 
+    ax.scatter(xs[0], ys[0], zs[0]   , color='red',label='Start')
+    ax.scatter(xs[-1], ys[-1], zs[-1], color='y'  ,label='End')
+    if settings !=-1:
+        # Show the settings if we input some
+        xs_goal = settings['xs']
+        ys_goal = settings['ys']
+        zs_goal = settings['zs']
+        ax.plot(xs_goal, ys_goal, zs_goal, label='Goal') 
+        
+    plt.legend()
+    ax.set_xlabel('x (mm)')
+    ax.set_ylabel('y (mm)')
+    ax.set_zlabel('z (mm)')
+    # Set equal aspect
+    # For this we need the extermum of all the pts
+    allpts = np.concatenate((xs, ys, zs))
+    maximum = np.max(allpts)
+    minimum = np.min(allpts)
+    ax.set_xlim3d(minimum, maximum)
+    ax.set_ylim3d(minimum, maximum)
+    ax.set_zlim3d(minimum, maximum)
+    # Slice the title if it's too long (for example, by including the whol path)
+    if len(title)>20:
+        t1 = title[:int(len(title)/2)]
+        t2 = title[int(len(title)/2):]
+        title = t1+'\n'+t2
+        
+    ax.set_title(title, fontsize=10)     
 
 #By default set the object
 if __name__ == '__main__':
