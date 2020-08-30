@@ -150,9 +150,10 @@ def plot_magSweepLinesResult(dataResult, settings=-1, title='Patate Chaude'):
         xs_goal = settings['xs']
         ys_goal = settings['ys']
         zs_goal = settings['zs']
-        ax.plot(xs_goal[1:-1], ys_goal[1:-1], zs_goal[1:-1], label='Goal') 
-        ax.scatter(xs_goal[0], ys_goal[0], zs_goal[0]   , color='red',label='Start')
-        ax.scatter(xs_goal[-1], ys_goal[-1], zs_goal[-1], color='y'  ,label='End')        
+        ax.plot(xs_goal, ys_goal, zs_goal, label='Goal') 
+#        ax.plot(xs_goal[1:-1], ys_goal[1:-1], zs_goal[1:-1], label='Goal') 
+#        ax.scatter(xs_goal[0], ys_goal[0], zs_goal[0]   , color='red',label='Start')
+#        ax.scatter(xs_goal[-1], ys_goal[-1], zs_goal[-1], color='y'  ,label='End')        
         
     plt.legend()
     ax.set_xlabel('x (mm)')

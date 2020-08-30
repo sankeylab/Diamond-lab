@@ -1,5 +1,5 @@
-speed	0.5
-speed|expanded	True
-N	20
-N|expanded	True
+time_per_point	250.0
+time_per_point|expanded	True
+resolution	100.0
+resolution|expanded	True
 

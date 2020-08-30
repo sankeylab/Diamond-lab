@@ -316,6 +316,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.statut = 'Waiting for settings.' # This will inform where we are in the tasks
         self.data_w = 0 # This is the 4-dimensional data to take at each magnet posiiont. Example: the photo-counts at each position. 
         self.info_date = 'No scan' # String for the data at which the scan is done
+        self.speed = 999 # This gonna be the speed along the line
         
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -350,14 +351,14 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.treeDic_settings = egg.gui.TreeDictionary(autosettings_path='setting_magSweepLines')
         self.place_object(self.treeDic_settings, row=3, column=0, column_span=2)
 
-        self.treeDic_settings.add_parameter('speed', 0.5, 
-                                            type='float', step=0.01, 
-                                            bounds=[0,2], suffix=' mm/s',
-                                            tip='Speed along the lines') 
-        self.treeDic_settings.add_parameter('N', 10, 
-                                            type='int', 
-                                            bounds=[2,None],
-                                            tip='Number of point to recored along each line swept')
+        self.treeDic_settings.add_parameter('time_per_point', 10, 
+                                            type='float', step=0.1, 
+                                            bounds=[0,None], suffix=' ms',
+                                            tip='How much time to elapsed between recorded points. ') 
+        self.treeDic_settings.add_parameter('resolution', 1, 
+                                            type='float', step=0.1,
+                                            bounds=[0.0001, None], suffix=' um',
+                                            tip='Distance between each point to record')
         # Add a label
         self.label_info = self.place_object(egg.gui.Label(), 1,2 )
         self.label_info_update() 
@@ -374,6 +375,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
         #Set the text. If sucess, the text is the name of the file. Otherwise it is an error message. 
         txt = ('Settings: '+ self.path_setting.split('/')[-1]+
                '\nStatut: '+ self.statut +
+               '\nSpeed along line: %f mm/s'%self.speed+
                '\nNumber of lines: %d'%self.nb_iter+
                '\nCurrent line: %d'%self.iter)
         
@@ -433,6 +435,9 @@ class GUIMagnetSweepLines(egg.gui.Window):
         # Put some header
         self.databox_save_scan.insert_header('name', 'Hakuna matata')
         self.databox_save_scan.insert_header('date', self.info_date)
+        for key in self.treeDic_settings.get_keys():
+            # Add each element of the dictionnary three
+            self.databox_save_scan.insert_header(key , self.treeDic_settings[key])        
         # Add each column
         self.databox_save_scan['xs'] = self.xs_scanned
         self.databox_save_scan['ys'] = self.ys_scanned
@@ -492,8 +497,18 @@ class GUIMagnetSweepLines(egg.gui.Window):
         # If we are at the begining
         if self.iter == 0:
             # Extract the settings
-            self.NperLine = self.treeDic_settings['N']
-            self.speed = self.treeDic_settings['speed']
+            self.resolution = self.treeDic_settings['resolution']
+            self.time_per_point = self.treeDic_settings['time_per_point']
+            self.speed = self.resolution/self.time_per_point # It should be in mm/s. The settings are in um/ms = mm/sec. Cool 
+            # Adjust the settings if that makes a speed to high
+            if self.speed >2:
+                # Set the speed to its maximum value
+                self.speed = 2 
+                # Inccrease the count time accordingly
+                self.time_per_point = self.resolution/self.speed
+                self.treeDic_settings['time_per_point'] = self.time_per_point
+                print('Warning. Speed was too high. Auto set the time for maximum allowed speed.')
+            
             # Signal the initialization
             self.event_initiate_sweep()
             # Go on the initial position 
@@ -532,7 +547,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
             y = self.ys_setting[self.iter]
             z = self.zs_setting[self.iter]
             xyzw = self.scan_single_line(x,y,z, 
-                                        speed=self.speed, N=self.NperLine)
+                                        speed=self.speed)
             # Append the point
             self.xs_scanned.extend(xyzw[0])
             self.ys_scanned.extend(xyzw[1])
@@ -551,9 +566,11 @@ class GUIMagnetSweepLines(egg.gui.Window):
             # Reset everything 
             self.button_reset_clicked()
         
-    def scan_single_line(self, xend=0, yend=0, zend=0, speed=1, N=10):
+    def scan_single_line(self, xend=0, yend=0, zend=0, speed=1):
         """
         Move in a straight line from the current position to the target position. 
+        Has it scans along the line, it is calling a dummy function to be overrid 
+        for making some task. 
         
         xend:
             (in mm) Target x position
@@ -563,8 +580,6 @@ class GUIMagnetSweepLines(egg.gui.Window):
             (in mm) Target z position    
         speed:
             (in mm/sec) Speed of the displacement along the line
-        N:
-            Number of points to record
             
         The function returns:
             xzyw:
@@ -574,16 +589,13 @@ class GUIMagnetSweepLines(egg.gui.Window):
         """
         _debug('GUIMagnetSweepLines: scan_xyz_line')
         
-        self.xend = xend
-        self.yend = yend
-        self.zend = zend
         # Set the target positions
         self.X.settings['Motion/Target_position'] = xend
         self.Y.settings['Motion/Target_position'] = yend
         self.Z.settings['Motion/Target_position'] = zend
         
         # Find the speed of each actuator for them to reach the end at the same 
-        # time
+        # time and move in a straight line. 
         # We need to know the distance that they will have to travel 
         self.xin = self.X.api.get_position()
         self.yin = self.Y.api.get_position()
@@ -592,11 +604,10 @@ class GUIMagnetSweepLines(egg.gui.Window):
         self.dy = np.abs(self.yin - yend)
         self.dz = np.abs(self.zin - zend)
         ds = np.sqrt(self.dx**2 + self.dy**2 + self.dz**2) # Total distance to travel
-        self.T = ds/speed # Total time for making the displacement
-        # Now determine the speed along each axis
-        self.vx = self.dx/self.T
-        self.vy = self.dy/self.T
-        self.vz = self.dz/self.T
+        # Now project this speed along each axis
+        self.vx = speed*self.dx/ds
+        self.vy = speed*self.dy/ds
+        self.vz = speed*self.dz/ds
         self.X.settings['Motion/Speed'] = self.vx
         self.Y.settings['Motion/Speed'] = self.vy
         self.Z.settings['Motion/Speed'] = self.vz
@@ -608,7 +619,6 @@ class GUIMagnetSweepLines(egg.gui.Window):
         # This will store the 4-dimension data at each x,y,z. For example, the photo-counts
         ws = [] 
  
-        self.dt = self.T/N # How much time to wait between points
          #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
         self.process_events()        
         
@@ -624,8 +634,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
         condition3 = self.Z.api.get_state() == 'MOVING'
         condition = condition1 or condition2 or condition3
         while condition:
-            # wait the desired interval of time
-            time.sleep(self.dt)
+
             # Let's take the positions
             xs.append( self.X.api.get_position() )
             ys.append( self.Y.api.get_position() )
@@ -635,7 +644,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
              #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
             self.process_events()
             
-            # Call a signal 
+            # Call a signal. 
+            # This function is in charge to give the time delay for not blowing the CPU with an almost infinite loop
             self.event_scan_line_checkpoint()
             ws.append(self.data_w)
             
@@ -667,7 +677,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
         """
         _debug('GUIMagnetSweepLines: event_scan_line_checkpoint')
         print('Hey congratulation! You are at iteration ', self.iter)
-        
+        # Fake the wait time for taking the counts. 
+        time.sleep(self.time_per_point*1e-3)
         # fake 4-dimensional data. This should be overid, for example, by the 
         # photocounts
         self.data_w = np.random.poisson(1000)
