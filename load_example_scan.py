@@ -11,65 +11,36 @@ import spinmob as sm
 import numpy as np
 import matplotlib.pyplot as plt 
 
-d = sm.data.load(text='Select saturation curve ;)')
+d = sm.data.load(text='Select Scan')
 
 
 # Each column of d is a columns of the scan
 
+
+
+
+# Hardcoded scale parameters (obtained by scanning a resolution target)
+convx = 9.24 #um/V
+convy = 6.30 #um/V
+
+xmin = d.headers['Vx_min']
+xmax = d.headers['Vx_max']
+Nx = d.headers['Nx']
+ymin = d.headers['Vy_min']
+ymax = d.headers['Vy_max']
+Ny = d.headers['Ny']
+
+xs = np.linspace(xmin, xmax, Nx)*convx
+ys = np.linspace(ymin, ymax, Ny)*convy
+
 # We can look at the image by doing this:
-plt.pcolor(d)
-plt.title(d.path+'\nMethod 1', fontsize=7)
-
-
-# Or by re-extracting the image
-image = []
-for col in d:
-    image.append(col)
-plt.figure()
-plt.pcolor(image)
-plt.title('Method 2')
-plt.title(d.path+'\nMethod 2', fontsize=7)
-
-#
-#
-## Show them all
-#import matplotlib.pyplot as plt
-#
-#N_slices = slice_s.get_nb_of_slice()
-#
-#for i in range(1,N_slices):
-#    single_slice = slice_s.get_slice(i)
-#    PL     = single_slice.Z
-#    Vxmin = single_slice.Vxmin
-#    Vxmax = single_slice.Vxmax
-#    Nx    = single_slice.Nx
-#    Vymin = single_slice.Vymin
-#    Vymax = single_slice.Vymax      
-#    Ny    = single_slice.Ny
-#    Vz    = single_slice.Vz
-#    label_slice = single_slice.label
-#    
-#    # Format image nicely with colorbar and true aspect ratio
-#    x = np.linspace(Vxmin , Vxmax, Nx)
-#    y = np.linspace(Vymin , Vymax, Ny)
-#    
-#    fig,ax = plt.subplots(figsize = (5,5), dpi=100)
-#    pc = ax.pcolor(x, y, PL, cmap='magma')
-#    #pc.set_clim(0,100)
-#    cb = fig.colorbar(pc)
-#    cb.ax.set_ylabel('PL',fontsize=11)
-#    ax.set_xlabel('Vx')
-#    ax.set_ylabel('Vy')
-#    ax.axis('image')
-#    ax.set_title(label_slice)
-  
-    
-    
-    
-    
-    
-    
-    
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.pcolor(xs, ys,d)
+ax.set_xlabel('x (um)')
+ax.set_ylabel('y (um)')
+ax.set_aspect('equal')
+plt.title(d.path, fontsize=7)
     
     
     

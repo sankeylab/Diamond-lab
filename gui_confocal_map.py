@@ -429,6 +429,10 @@ class GUIMap(egg.gui.Window):
         self.databox_scan.insert_header('Vy_max', self.Vymax)
         self.databox_scan.insert_header('Ny', self.Ny)
         self.databox_scan.insert_header('N_col', N_col)
+        # Add all the element of the three dictionnary
+        for key in self.treeDic_settings.get_keys():
+            # Add each element of the dictionnary three
+            self.databox_scan.insert_header(key , self.treeDic_settings[key])        
         # Add each column 
         for i in range(N_col):
             col = self.Z[i]

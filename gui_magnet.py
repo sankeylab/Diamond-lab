@@ -6,8 +6,9 @@ Created on Fri Aug 21 10:41:45 2020
 """
 
 from api_actuator import ApiActuator
+from prepare_mag_sweep_lines import plot_magSweepLinesSettings, plot_magSweepLinesResult
 import spinmob     as _s
-import spinmob.egg as _e
+from spinmob import egg
 import time
 import mcphysics   as _mp
 import numpy as np
@@ -18,8 +19,6 @@ _p = traceback.print_last #Very usefull command to use for getting the last-not-
 #Debug
 _debug_enabled           = False
 
-#Fast acces to the GUI
-_g = _e.gui
 
 
 
@@ -63,15 +62,15 @@ class GUISingleActuator(_mp.visa_tools.visa_gui_base):
     
         # Add stuff to the GUI.
         #On the top
-        self.button_reset       = self.grid_top.add(_g.Button('Reset', checkable=True)).set_width(60).disable()
-        self.button_state       = self.grid_top.add(_g.Button('State', checkable=True)).set_width(75).disable()
-        self.button_move        = self.grid_top.add(_g.Button('Move', checkable=True)).set_width(100).disable()
-        self.button_stop        = self.grid_top.add(_g.Button('STOP', checkable=True, )).set_width(100).enable()
+        self.button_reset       = self.grid_top.add(egg.gui.Button('Reset', checkable=True)).set_width(60).disable()
+        self.button_state       = self.grid_top.add(egg.gui.Button('State', checkable=True)).set_width(75).disable()
+        self.button_move        = self.grid_top.add(egg.gui.Button('Move', checkable=True)).set_width(100).disable()
+        self.button_stop        = self.grid_top.add(egg.gui.Button('STOP', checkable=True, )).set_width(100).enable()
         self.button_stop.set_colors(text='red', background='yellow') #Be fancy
         #Elsewhere
-        self.label_position     = self.grid_top.place_object(_g.Label('Position = XX mm'), 0,1,column_span=2)
-        self.label_state        = self.grid_top.place_object(_g.Label('State = LOL'), 2,1,column_span=2)  
-        self.label_name        = self.grid_top.place_object(_g.Label('Name = '+self.name), 4,1,column_span=2)  
+        self.label_position     = self.grid_top.place_object(egg.gui.Label('Position = XX mm'), 0,1,column_span=2)
+        self.label_state        = self.grid_top.place_object(egg.gui.Label('State = LOL'), 2,1,column_span=2)  
+        self.label_name        = self.grid_top.place_object(egg.gui.Label('Name = '+self.name), 4,1,column_span=1)  
         
         #This is some setting
         self.settings.add_parameter('Motion/Target_position', bounds=(0,25), suffix=' mm')
@@ -79,10 +78,11 @@ class GUISingleActuator(_mp.visa_tools.visa_gui_base):
         
         
         #Add a timer for some update when the actuator moves
-        self.timer_moving = _g.Timer(interval_ms=500, single_shot=False)
+        self.timer_moving = egg.gui.Timer(interval_ms=500, single_shot=False)
         self.timer_moving._widget.timeout.connect( self._update ) #Each time it tick, it gonna do the function self._update
         
-        
+        # Place the instrument name at a more convient place
+        self.grid_top.place_object(self.label_instrument_name,0,2,column_span=1)
         
         #Connection of the button to the function
         self.button_state           .signal_toggled.connect(self._button_state_toggled)
@@ -187,17 +187,20 @@ class GUISingleActuator(_mp.visa_tools.visa_gui_base):
                 self.button_move .set_checked(False,  block_events=True).enable()
                 
                 
-class GUIMagnet(_mp.visa_tools.visa_gui_base):
+class GUIMagnet(egg.gui.Window):
     """
     Class that combines 3 actuator GUIs in order to control the position of the magnet.  
     """
     
-    def __init__(self, name='Magnet', show=True):
+    def __init__(self, name='Magnet', size=[1300,800]):
         """
         Create the GUI 
         """
         _debug('GUIMagnet.__init__()', name)
         _debug('Success is going from failure to failure without losing your enthusiasm – Winston Churchill')
+
+        # Run the basic stuff for the initialization
+        egg.gui.Window.__init__(self, title=name, size=size)
         
         # Remember the name. It is important a name, you know. 
         self.name = name
@@ -205,8 +208,6 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         #Save path to save file (useful when this GUI is inside probe_station)
         self.path_save_file = ''
                 
-        # Now create the magnet GUI
-        self.window = _g.Window(name, autosettings_path=self.name+'_window').set_size() 
         
         #Create the instance for the three actuator
         self.X = GUISingleActuator(show=False)
@@ -220,20 +221,494 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         self.Z.set_name('Ultra-Z')
 
         # Add three actuator GUI
-        self.window.place_object(_g.Label('X: '), 0,0) #Set the label at position (0,0)
-        self.window.place_object(self.X.window)
-        self.window.new_autorow()
-        self.window.place_object(_g.Label('Y: '), 0,1) #Set the label at position (0,1)
-        self.window.place_object(self.Y.window)
-        self.window.new_autorow()
-        self.window.place_object(_g.Label('Z: '), 0,2) #Set the label at position (0,2)
-        self.window.place_object(self.Z.window)
+        self.place_object(egg.gui.Label('X: '), 0,0) #Set the label at position (0,0)
+        self.place_object(self.X.window)
+        self.new_autorow()
+        self.place_object(egg.gui.Label('Y: '), 0,1) #Set the label at position (0,1)
+        self.place_object(self.Y.window)
+        self.new_autorow()
+        self.place_object(egg.gui.Label('Z: '), 0,2) #Set the label at position (0,2)
+        self.place_object(self.Z.window)
+        
+        # Place tabs for different task
+        self.tabs1 = self.place_object(egg.gui.TabArea(), 
+                                       row=0, column=1,
+                                       column_span=5,  row_span=10,
+                                       alignment=0)
+
+        # Tab for sweeping lines
+        self.gui_sweep_lines = GUIMagnetSweepLines(self)
+        self.tab_sweep_lines = self.tabs1.add_tab('Sweep lines')
+        self.tab_sweep_lines.place_object(self.gui_sweep_lines, alignment=0)   
+        
+        # Tab for the list sweep
+        self.gui_list_sweep = GUIMagnetListSweep(self)
+        self.tab_list_sweep = self.tabs1.add_tab('List sweep')
+        self.tab_list_sweep.place_object(self.gui_list_sweep, alignment=0)  
+        
+
+
+        
+    def go_to_xyz(self, x, y, z, want_wait=False):
+        """
+        Go to x, y, z (in mm)
+        
+        want_wait:
+            (boolean) Weither of not we want to wait before it finishes
+        """
+        _debug('GUIMagnet: go_to_xyz'  )
+               
+        # Set the target positions
+        self.X.settings['Motion/Target_position'] = x
+        self.Y.settings['Motion/Target_position'] = y
+        self.Z.settings['Motion/Target_position'] = z       
+        
+        # Go for real
+        self.X.button_move.click()
+        self.Y.button_move.click()
+        self.Z.button_move.click()
+
+        if want_wait:
+            #Wait that the actuators finished to move. 
+            condition = True
+            while condition:
+                # Wait for not exploding the CPU
+                time.sleep(0.1)
+                 #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
+                self.process_events()
+                # Note the condition for keeping doing
+                # As long as the three actuator move
+                condition1 = self.X.api.get_state() == 'MOVING'
+                condition2 = self.Y.api.get_state() == 'MOVING'
+                condition3 = self.Z.api.get_state() == 'MOVING'
+                condition = condition1 or condition2 or condition3
+            
+
+
+class GUIMagnetSweepLines(egg.gui.Window):
+    """
+    Gui for making the actuator to sweep along various lines
+    """
+    #TODO Rewrite it and make sure that it does what it should.
+    
+    def __init__(self, magnet3, name='Magnet sweep lines', show=True,size=[1300,600]):
+        """
+        Create the GUI 
+        
+        magnet3:
+            The gui object "GUIMagnet" that is used to control the three 
+            actuators. 
+        """
+        _debug('GUIMagnetSweepLines: __init__', name)
+        _debug('The best way to predict your future is to create it. – Abraham Lincoln')
+        
+        self.magnet = magnet3 # Steal the magnet gui, mouahhaha
+        # Get each axis component for saving precious characters lol
+        self.X = magnet3.X
+        self.Y = magnet3.Y
+        self.Z = magnet3.Z
+        
+        # Some useful attribute
+        self.is_running = False # Tell is the sweep is running
+        self.iter = 0 # At which iteration we are on
+        self.nb_iter = 0 # How many iteration to perform (number of lines to scan)
+        self.path_setting = 'Data: No File loaded ;)' # This is the string for the path of the data
+        self.statut = 'Waiting for settings.' # This will inform where we are in the tasks
+        self.data_w = 0 # This is the 4-dimensional data to take at each magnet posiiont. Example: the photo-counts at each position. 
+        self.info_date = 'No scan' # String for the data at which the scan is done
+        self.speed = 999 # This gonna be the speed along the line
+        
+        # Run the basic stuff for the initialization
+        egg.gui.Window.__init__(self, title=name, size=size)
+
+        # A Button for starting the line sweep
+        self.button_run = self.place_object(egg.gui.Button('Start'), 
+                                            0,0, alignment=1)
+        self.button_run.disable() # Disable until we have imported or set the settings
+        self.connect(self.button_run.signal_clicked, self.button_run_clicked )  
+        # A Button for resetting the sweep
+        self.button_reset = self.place_object(egg.gui.Button('Reeeset'), 
+                                              0,1, alignment=1)
+        self.button_reset.signal_toggled.connect(self.button_reset_clicked)   
+        #Add a button for loading the data
+        self.button_load_settings = self.place_object(egg.gui.Button('Load settings'),
+                                                  1,0, alignment=1)
+        self.connect(self.button_load_settings.signal_clicked, self.button_load_settings_clicked )
+        #Add a button for looking at the settings
+        self.button_look_setting = self.place_object(egg.gui.Button('Look the settings'), 
+                                                     1,1, alignment=1)
+        self.connect(self.button_look_setting.signal_clicked, self.button_look_setting_clicked )
+        #Add a button for comparing the scan and with the setting
+        self.button_compare = self.place_object(egg.gui.Button('Compare scan and settings'), 
+                                                     2,1, alignment=1)
+        self.connect(self.button_compare.signal_clicked, self.button_compare_clicked )
+        #Add a button for saving the scanned data
+        self.button_save_sweep = self.place_object(egg.gui.Button('Save sweep :D'),
+                                                  2,0, alignment=1)
+        self.connect(self.button_save_sweep.signal_clicked, self.button_save_sweep_clicked )
+        
+        # tree dictionnarry for some settings
+        self.treeDic_settings = egg.gui.TreeDictionary(autosettings_path='setting_magSweepLines')
+        self.place_object(self.treeDic_settings, row=3, column=0, column_span=2)
+
+        self.treeDic_settings.add_parameter('time_per_point', 10, 
+                                            type='float', step=0.1, 
+                                            bounds=[0,None], suffix=' ms',
+                                            tip='How much time to elapsed between recorded points. ') 
+        self.treeDic_settings.add_parameter('resolution', 1, 
+                                            type='float', step=0.1,
+                                            bounds=[0.0001, None], suffix=' um',
+                                            tip='Distance between each point to record')
+        # Add a label
+        self.label_info = self.place_object(egg.gui.Label(), 1,2 )
+        self.label_info_update() 
+        
+        # Attempt to make the button together
+        self.set_row_stretch(3, 10)
+        self.set_column_stretch(2, 10)        
+        
+            
+    def label_info_update(self):
+        """
+        Adjust the info shown with respect to the settings
+        """
+        #Set the text. If sucess, the text is the name of the file. Otherwise it is an error message. 
+        txt = ('Settings: '+ self.path_setting.split('/')[-1]+
+               '\nStatut: '+ self.statut +
+               '\nSpeed along line: %f mm/s'%self.speed+
+               '\nNumber of lines: %d'%self.nb_iter+
+               '\nCurrent line: %d'%self.iter)
+        
+        self.label_info.set_text( txt ) 
+        
+        
+    def button_load_settings_clicked(self, *a):
+        """
+        Load a list of x,y,z points for the magnetic field sweep
+        """
+        _debug('GUIMagnetSweepLines._button_load_list_toggled()')
+        
+        #Load the list. 
+        self.databox_settings = _s.data.load(text='Load the set of lines to sweep')
+        self.path_setting = self.databox_settings.path
+        # Get the path 
+        self.xs_setting = self.databox_settings['xs']
+        self.ys_setting = self.databox_settings['ys']
+        self.zs_setting = self.databox_settings['zs']
+        self.nb_iter = len(self.xs_setting)
+        
+        #Updat the info shown
+        self.statut = 'Settings are now loaded'
+        self.label_info_update()
+        
+        # Enable the run button, since we now have data
+        self.button_run.enable()
+        self.button_run.set_colors(background='green')
+        
+    def button_look_setting_clicked(self):
+        """
+        Show the lines that the magnet should follow
+        """
+        _debug('GUIMagnetSweepLines: button_look_setting_clicked')
+        # Pop up a GUI
+        plot_magSweepLinesSettings(self.databox_settings, self.path_setting)
+        
+    def button_compare_clicked(self):
+        """
+        Compare the scanned data to the settings 
+        """
+        # Load the scanned data
+        d_scanned_data = _s.data.load(text='Load a scanned data set')
+        # Load the setting
+        d_settings     = _s.data.load(text='Load the settong fpor comparison')
+        # Pop up a GUI
+        plot_magSweepLinesResult(d_scanned_data, d_settings)
+
+    def button_save_sweep_clicked(self):
+        """
+        Save the result of the sweep
+        """
+        _debug('GUIMagnetSweepLines: button_save_sweep_clicked')
+        
+        # Prepare the databox to save
+        self.databox_save_scan = _s.data.databox()
+        # Put some header
+        self.databox_save_scan.insert_header('name', 'Hakuna matata')
+        self.databox_save_scan.insert_header('date', self.info_date)
+        for key in self.treeDic_settings.get_keys():
+            # Add each element of the dictionnary three
+            self.databox_save_scan.insert_header(key , self.treeDic_settings[key])        
+        # Add each column
+        self.databox_save_scan['xs'] = self.xs_scanned
+        self.databox_save_scan['ys'] = self.ys_scanned
+        self.databox_save_scan['zs'] = self.zs_scanned  
+        self.databox_save_scan['ws'] = self.ws_scanned  
+        
+        # Pop up the window for saving the data
+        self.databox_save_scan.save_file()
+        
+
+    def button_reset_clicked(self):
+        """
+        Reset the iteration and stop the runnin
+        """
+        _debug('GUIMagnetSweepLines: button_reset_clicked')
+
+        # Reset
+        self.iter = 0
+        
+        # Stop to run 
+        if self.is_running:
+            self.button_run_clicked()
+
+        self.statut = 'Sweep is resetted'
+        self.label_info_update()   
+        
+        # Reupdate the button, because the if was not met the first time. 
+        self.button_run.set_text('Start')
+        self.button_run.set_colors(background='green')          
+                    
+
+    def button_run_clicked(self):
+        """
+        Button for controlling the experiement, 
+        """
+        _debug('GUIMagnetSweepLines: button_run_clicked')
+        
+        if self.is_running == False:
+            self.is_running = True
+            self.button_run.set_text('Pause')
+            self.button_run.set_colors(background='blue')
+            self.run_sweep()
+            
+        else:
+            # Stop to run if it is running
+            self.is_running = False
+            self.button_run.set_text('Continue')
+            self.button_run.set_colors(background='green')         
+        
+    def run_sweep(self):
+        """
+        Run the sweep along the lines. 
+        First go on the initial position
+        """
+        _debug('GUIMagnetSweepLines: run_sweep')
+        
+        # If we are at the begining
+        if self.iter == 0:
+            # Extract the settings
+            self.resolution = self.treeDic_settings['resolution']
+            self.time_per_point = self.treeDic_settings['time_per_point']
+            self.speed = self.resolution/self.time_per_point # It should be in mm/s. The settings are in um/ms = mm/sec. Cool 
+            # Adjust the settings if that makes a speed to high
+            if self.speed >2:
+                # Set the speed to its maximum value
+                self.speed = 2 
+                # Inccrease the count time accordingly
+                self.time_per_point = self.resolution/self.speed
+                self.treeDic_settings['time_per_point'] = self.time_per_point
+                print('Warning. Speed was too high. Auto set the time for maximum allowed speed.')
+            
+            # Signal the initialization
+            self.event_initiate_sweep()
+            # Go on the initial position 
+            self.statut = 'Reaching the initial position'
+            self.label_info_update()   
+            # Have a descent speed
+            self.X.settings['Motion/Speed'] = 1 # mm/sec
+            self.Y.settings['Motion/Speed'] = 1 # mm/sec
+            self.Z.settings['Motion/Speed'] = 1 # mm/sec
+            # Then reach the position
+            self.magnet.go_to_xyz(self.xs_setting[0],
+                                  self.ys_setting[0],
+                                  self.zs_setting[0],
+                                  want_wait=True ) # Wait that we reach the position before continuing
+            # This will store the positions that the actuatores reach at each checkpoint
+            self.xs_scanned = []
+            self.ys_scanned = []
+            self.zs_scanned = []
+            # This will store the 4-Dimensional data, for example the photo-counts
+            self.ws_scanned = []
+            # Increase ther iteration for not scanning the first poitn to the first point !
+            self.iter = 1
+            
+        
+        
+        condition=True
+        while condition:
+            _debug('GUIMagnetSweepLines: run_sweep: iter', self.iter)
+            # Allow the GUI to update. This is important to avoid freezing of the GUI inside loops
+            self.process_events()    
+            # Update the info shown
+            self.statut = 'Sweeping along a line'
+            self.label_info_update()
+            # Move along the line
+            x = self.xs_setting[self.iter]
+            y = self.ys_setting[self.iter]
+            z = self.zs_setting[self.iter]
+            xyzw = self.scan_single_line(x,y,z, 
+                                        speed=self.speed)
+            # Append the point
+            self.xs_scanned.extend(xyzw[0])
+            self.ys_scanned.extend(xyzw[1])
+            self.zs_scanned.extend(xyzw[2])
+            self.ws_scanned.extend(xyzw[3])
+            
+            # Update the condition of the scan
+            self.iter += 1
+            condition = self.is_running and self.iter<self.nb_iter
+            
+        # Update the data
+        self.info_date = time.ctime(time.time())
+        _debug('GUIMagnetSweepLines: run_sweep: done')
+        # If the scan is finished
+        if self.iter>=self.nb_iter:
+            # Reset everything 
+            self.button_reset_clicked()
+        
+    def scan_single_line(self, xend=0, yend=0, zend=0, speed=1):
+        """
+        Move in a straight line from the current position to the target position. 
+        Has it scans along the line, it is calling a dummy function to be overrid 
+        for making some task. 
+        
+        xend:
+            (in mm) Target x position
+        yend:
+            (in mm) Target y position
+        zend:
+            (in mm) Target z position    
+        speed:
+            (in mm/sec) Speed of the displacement along the line
+            
+        The function returns:
+            xzyw:
+                A tuple (xs, ys, zs, ws), where xs, ys and zs are array for the 
+                positions of the actuator at each checkpoint. ws is the array 
+                of the 4-dimension data taken (for example, the counts)
+        """
+        _debug('GUIMagnetSweepLines: scan_xyz_line')
+        
+        # Set the target positions
+        self.X.settings['Motion/Target_position'] = xend
+        self.Y.settings['Motion/Target_position'] = yend
+        self.Z.settings['Motion/Target_position'] = zend
+        
+        # Find the speed of each actuator for them to reach the end at the same 
+        # time and move in a straight line. 
+        # We need to know the distance that they will have to travel 
+        self.xin = self.X.api.get_position()
+        self.yin = self.Y.api.get_position()
+        self.zin = self.Z.api.get_position()
+        self.dx = np.abs(self.xin - xend)
+        self.dy = np.abs(self.yin - yend)
+        self.dz = np.abs(self.zin - zend)
+        ds = np.sqrt(self.dx**2 + self.dy**2 + self.dz**2) # Total distance to travel
+        # Now project this speed along each axis
+        self.vx = speed*self.dx/ds
+        self.vy = speed*self.dy/ds
+        self.vz = speed*self.dz/ds
+        self.X.settings['Motion/Speed'] = self.vx
+        self.Y.settings['Motion/Speed'] = self.vy
+        self.Z.settings['Motion/Speed'] = self.vz
+        
+        # These will store the position of the magnet at each checkpoint
+        xs = []
+        ys = []
+        zs = []
+        # This will store the 4-dimension data at each x,y,z. For example, the photo-counts
+        ws = [] 
+ 
+         #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
+        self.process_events()        
+        
+        # Go for real
+        self.X.button_move.click()
+        self.Y.button_move.click()
+        self.Z.button_move.click()
+        
+        # Note the condition for keeping doing
+        # As long as the three actuator move
+        condition1 = self.X.api.get_state() == 'MOVING'
+        condition2 = self.Y.api.get_state() == 'MOVING'
+        condition3 = self.Z.api.get_state() == 'MOVING'
+        condition = condition1 or condition2 or condition3
+        while condition:
+
+            # Let's take the positions
+            xs.append( self.X.api.get_position() )
+            ys.append( self.Y.api.get_position() )
+            zs.append( self.Z.api.get_position() )
+            _debug('GUIMagnetSweepLines: scan_xyz_line: Done')
+            _debug('GUIMagnetSweepLines: scan_xyz_line: %f %f %f'%(xs[-1], ys[-1], zs[-1]))
+             #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
+            self.process_events()
+            
+            # Call a signal. 
+            # This function is in charge to give the time delay for not blowing the CPU with an almost infinite loop
+            self.event_scan_line_checkpoint()
+            ws.append(self.data_w)
+            
+            # Note the condition for keeping doing
+            # As long as the three actuator move
+            condition1 = self.X.api.get_state() == 'MOVING'
+            condition2 = self.Y.api.get_state() == 'MOVING'
+            condition3 = self.Z.api.get_state() == 'MOVING'
+            condition = condition1 or condition2 or condition3
+        
+        _debug('GUIMagnetSweepLines: scan_xyz_line: Done')
+        
+        return (xs, ys, zs, ws)
+    
+    def event_initiate_sweep(self):
+        """
+        Dummy function to be overrid. 
+        This is called when we start the sweep. 
+        For example, this can be overideen to prepare the photocounter. 
+        """
+        _debug('GUIMagnetSweepLines: event_scan_initiate_sweep')
+        print('Congratulation ! Its a neodymium !')
+        
+    def event_scan_line_checkpoint(self):
+        """
+        Dummy function to be overrid. 
+        This is done when we scan a straight line, each time that we reach a
+        point to record.
+        """
+        _debug('GUIMagnetSweepLines: event_scan_line_checkpoint')
+        print('Hey congratulation! You are at iteration ', self.iter)
+        # Fake the wait time for taking the counts. 
+        time.sleep(self.time_per_point*1e-3)
+        # fake 4-dimensional data. This should be overid, for example, by the 
+        # photocounts
+        self.data_w = np.random.poisson(1000)
+        
+class GUIMagnetListSweep(egg.gui.Window):
+    """
+    Gui for making the actuator to go at each position in the list and perform 
+    a task at each single position.
+    """
+    #TODO Rewrite it and make sure that it does what it should.
+    #TODO FOr example, exctrat X, Y and Z components of magnet3
+    
+    def __init__(self, magnet3, name='Magnet sweep list', show=True, size=[1300,600]):
+        """
+        Create the GUI 
+        
+        magnet3:
+            The gui object "GUIMagnet" that is used to control the three actuator. 
+        """
+        _debug('GUIMagnetListSweep: __init__', name)
+        _debug('Don’t watch the clock; do what it does. Keep going. – Sam Levenson')
+        
+        # Run the basic stuff for the initialization
+        egg.gui.Window.__init__(self, title=name, size=size)
         
         #Add other objects
-        self.button_load_list   = self.window.place_object(_g.Button('Load list', checkable=True), 2,0).set_width(100).disable()
-        self.button_scan_magnet = self.window.place_object(_g.Button('Scan Magnet', checkable=True), 3,1).set_width(150).disable()
-        self.label_load_file    = self.window.place_object(_g.Label('No File loaded ;)'), 3,0 )
-        self.table_positions    = self.window.place_object(_g.Table(columns = 3, rows = 5), 2,1) #Table containing the xyz position of the magnet
+        self.button_load_list   = self.place_object(egg.gui.Button('MAY THE FORCE BE WITH YOU', checkable=True), 2,0).set_width(100).disable()
+        self.button_scan_magnet = self.place_object(egg.gui.Button('PLEASE IMPLEMENT THE GUI', checkable=True), 3,1).set_width(150).disable()
+        self.label_load_file    = self.place_object(egg.gui.Label('THE GUI IS NOT READY'), 3,0 )
+        self.table_positions    = self.place_object(egg.gui.Table(columns = 3, rows = 5), 2,1) #Table containing the xyz position of the magnet
         
         #Connect the button !
         self.button_load_list  .signal_toggled.connect(self._button_load_list_toggled)
@@ -243,18 +718,14 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         self.button_load_list  .set_checked(False,  block_events=True).enable()
         self.button_scan_magnet.set_checked(False,  block_events=True).enable()
 #        
-#        self.table_positions._widget.cellClicked(1,1)
+#        self.table_positions._widget.cellClicked(1,1)        
         
-        
-        # Show the window if show is true
-        if show:
-            self.window.show()
-        
+
     def _button_load_list_toggled(self, *a):
         """
         Load a list of x,y,z points for the magnetic field sweep
         """
-        _debug('GUIMagnet._button_load_list_toggled()')
+        _debug('GUIMagnetListSweep._button_load_list_toggled()')
         
         #Load the list. 
         self.d = _s.data.load(text='Load list of x,y,z positions ;)', filters="*.csv")
@@ -271,7 +742,7 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         Move the actuator at each x,y,z position loaded in the table self.table_positions
         Perfom something at each of these position. We have to thing more about how to implement this within the master GUI. 
         """
-        _debug('GUIMagnet._button_scan_magnet_toggled')
+        _debug('GUIMagnetListSweep._button_scan_magnet_toggled')
         
 
         
@@ -319,9 +790,7 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
             self.button_scan_magnet.set_checked(False,  block_events=True)
             self.button_scan_magnet.set_height(25)
             self.button_scan_magnet.set_text('Scan Magnet')
-
-        
-        
+            
     def fill_table_positions(self, data):
         """
         Fill up self.table_positions with the three first columns of data. 
@@ -331,7 +800,7 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
             The name of the file if it succed OR
             An error message corresponding to what happened. 
         """
-        _debug('GUIMagnet.fill_table_positions()')
+        _debug('GUIMagnetListSweep.fill_table_positions()')
         
         #Try to open the data
         try: 
@@ -378,7 +847,7 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
                           Then wait that the three actuator finish to move. 
         
         """
-        _debug('GUIMagnet.go_to()', actuator, column, row)
+        _debug('GUIMagnetListSweep.go_to()', actuator, column, row)
         
         #Set the target position
         r = self.table_positions.get_value(column=column, row=row)
@@ -399,20 +868,7 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
         if not 'READY' in actuator.api.get_state():
             print('WARNING ! Actuator ' + actuator.get_name() + 'Is not in Ready State')
         return
-        
-    def after_scan_set_positions(self, i=0):
-        """
-        Task to perfom at the position corresponding to the i'th row of
-        self.table_position.
-        
-        To overwrite for doing stuff like GHz sweep or anything ;)
-        i is the iteration in the table (the i'th row), such that we can perform 
-        a task depending on the iteration. 
-        """
-        _debug('GUIMagnet_task_scan_magnet()', i)
-        
-        print('On the %dth row ;)'%i)
-        
+
     def go_to_xyz(self, x, y, z, want_wait=False):
         """
         Go to x, y, z (in mm)
@@ -445,101 +901,19 @@ class GUIMagnet(_mp.visa_tools.visa_gui_base):
                 condition2 = self.Y.api.get_state() == 'MOVING'
                 condition3 = self.Z.api.get_state() == 'MOVING'
                 condition = condition1 or condition2 or condition3
-            
-    def scan_xyz_line(self, xend=0, yend=0, zend=0, speed=1, N=10):
+                
+    def after_scan_set_positions(self, i=0):
         """
-        Move in a straight line from the current position to the target position. 
+        Task to perfom at the position corresponding to the i'th row of
+        self.table_position.
         
-        xend:
-            (in mm) Target x position
-        yend:
-            (in mm) Target y position
-        zend:
-            (in mm) Target z position    
-        speed:
-            (in mm/sec) Speed of the displacement along the line
-        N:
-            Number of points to record
+        To overwrite for doing stuff like GHz sweep or anything ;)
+        i is the iteration in the table (the i'th row), such that we can perform 
+        a task depending on the iteration. 
         """
-        self.xend = xend
-        self.yend = yend
-        self.zend = zend
-        # Set the target positions
-        self.X.settings['Motion/Target_position'] = xend
-        self.Y.settings['Motion/Target_position'] = yend
-        self.Z.settings['Motion/Target_position'] = zend
+        _debug('GUIMagnetListSweep: after_scan_set_positions', i)
         
-        # Find the speed of each actuator for them to reach the end at the same 
-        # time
-        # We need to know the distance that they will have to travel 
-        self.xin = self.X.api.get_position()
-        self.yin = self.Y.api.get_position()
-        self.zin = self.Z.api.get_position()
-        self.dx = np.abs(self.xin - xend)
-        self.dy = np.abs(self.yin - yend)
-        self.dz = np.abs(self.zin - zend)
-        ds = np.sqrt(self.dx**2 + self.dy**2 + self.dz**2) # Total distance to travel
-        self.T = ds/speed # Total time for making the displacement
-        # Now determine the speed along each axis
-        self.vx = self.dx/self.T
-        self.vy = self.dy/self.T
-        self.vz = self.dz/self.T
-        self.X.settings['Motion/Speed'] = self.vx
-        self.Y.settings['Motion/Speed'] = self.vy
-        self.Z.settings['Motion/Speed'] = self.vz
-        
-        # This will store the positions of the actuator
-        self.xs = []
-        self.ys = []
-        self.zs = []
-        self.dt = self.T/N # How much time to wait between points
-         #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
-        self.window.process_events()        
-        
-        # Go !
-        # Let's take the positions
-        self.xs.append( self.X.api.get_position() )
-        self.ys.append( self.Y.api.get_position() )
-        self.zs.append( self.Z.api.get_position() )
-        # Go for real
-        self.X.button_move.click()
-        self.Y.button_move.click()
-        self.Z.button_move.click()
-        
-        # Note the condition for keeping doing
-        # As long as the three actuator move
-        condition1 = self.X.api.get_state() == 'MOVING'
-        condition2 = self.Y.api.get_state() == 'MOVING'
-        condition3 = self.Z.api.get_state() == 'MOVING'
-        condition = condition1 or condition2 or condition3
-        while condition:
-            # wait the desired interval of time
-            time.sleep(self.dt)
-            # Let's take the positions
-            self.xs.append( self.X.api.get_position() )
-            self.ys.append( self.Y.api.get_position() )
-            self.zs.append( self.Z.api.get_position() )
-             #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
-            self.window.process_events()
-            
-            # Call a signal
-            self.event_scan_line_checkpoint()
-            
-            # Note the condition for keeping doing
-            # As long as the three actuator move
-            condition1 = self.X.api.get_state() == 'MOVING'
-            condition2 = self.Y.api.get_state() == 'MOVING'
-            condition3 = self.Z.api.get_state() == 'MOVING'
-            condition = condition1 or condition2 or condition3
-        
-    def event_scan_line_checkpoint(self):
-        """
-        Dummy function to be overrid. 
-        This is done when we scan a straight line, each time that we reach a
-        point to record.
-        """
-        
-
+        print('On the %dth row ;)'%i)        
 
 
 #By default set the object
@@ -549,73 +923,29 @@ if __name__ == '__main__':
     api_actuator._debug_enabled
     
 #    cc = ApiActuator().
-    self = GUIMagnet(name='Magnetooooo') #This will pop-up the GUI
+    self = GUIMagnet(name='Magnetooooo') 
+    self.show()
     
-    # Check the trajectory 
-    from mpl_toolkits.mplot3d import Axes3D # This import registers the 3D projection, but is otherwise unused.
-    import matplotlib.pyplot as plt
+
+#        
 #    fig = plt.figure()
 #    ax = fig.add_subplot(111, projection='3d')   
-#    ax.scatter(self.xs[1:-1], self.ys[1:-1], self.zs[1:-1]) 
-#    ax.scatter(self.xs[0], self.ys[0], self.zs[0], color='red',label='First')
-#    ax.scatter(self.xs[-1], self.ys[-1], self.zs[-1], color='y',label='End')
-#    ax.plot([self.xin,self.xend], [self.yin,self.yend], [self.zin,self.zend], label='Goal')
+#    ax.scatter(xtots, ytots, ztots) 
+#    ax.scatter(xtots[0], ytots[0], ztots[0], color='red',label='First')
+#    ax.scatter(xtots[-1], ytots[-1], ztots[-1], color='y',label='End')
 #    plt.legend()
 #    ax.set_xlabel('x (mm)')
 #    ax.set_ylabel('y (mm)')
 #    ax.set_zlabel('z (mm)')
 #    # Set equal aspect
 #    # First get the extermum of all the pts
-#    allpts = np.concatenate((self.xs, self.ys, self.zs))
+#    allpts = np.concatenate((xtots, ytots, ztots))
 #    maximum = np.max(allpts)
 #    minimum = np.min(allpts)
 #    ax.set_xlim3d(minimum, maximum)
 #    ax.set_ylim3d(minimum, maximum)
-#    ax.set_zlim3d(minimum, maximum)
-    
-    # Test many scan
-    xtots = []
-    ytots = []
-    ztots = []
-    # Try a plane
-    x1 = 10
-    x2 = 17
-    z1 = 15
-    z2 = 22
-    ys = np.linspace(14, 19, 10)
-    # First reach the initial position
-    self.go_to_xyz(x1, ys[0], z1, want_wait=True)
-    for i in range(int(len(ys)/2)):
-        y1 = ys[2*i]
-        y2 = ys[2*i+1]
-        # Make a zigzage following the y axis
-        self.scan_xyz_line(x2, y2, z2, speed=1, N=40)
-        xtots.extend(self.xs)
-        ytots.extend(self.ys)
-        ztots.extend(self.zs)
-        self.scan_xyz_line(x1, y1, z1, speed=1, N=40)
-        xtots.extend(self.xs)
-        ytots.extend(self.ys)
-        ztots.extend(self.zs)
-        
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')   
-    ax.scatter(xtots, ytots, ztots) 
-    ax.scatter(xtots[0], ytots[0], ztots[0], color='red',label='First')
-    ax.scatter(xtots[-1], ytots[-1], ztots[-1], color='y',label='End')
-    plt.legend()
-    ax.set_xlabel('x (mm)')
-    ax.set_ylabel('y (mm)')
-    ax.set_zlabel('z (mm)')
-    # Set equal aspect
-    # First get the extermum of all the pts
-    allpts = np.concatenate((xtots, ytots, ztots))
-    maximum = np.max(allpts)
-    minimum = np.min(allpts)
-    ax.set_xlim3d(minimum, maximum)
-    ax.set_ylim3d(minimum, maximum)
-    ax.set_zlim3d(minimum, maximum)    
-    
+#    ax.set_zlim3d(minimum, maximum)    
+#    
     
     
     
