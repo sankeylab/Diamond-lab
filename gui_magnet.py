@@ -359,12 +359,6 @@ class GUIMagnetSweepLines(egg.gui.Window):
                                             type='float', 
                                             bounds=[0.0001, None], suffix=' um',
                                             tip='Distance between each point to record')
-        #TODO put the following in the higher level gui, since it is specific to the experiment
-        self.treeDic_settings.add_parameter('nb_line_before_optimize', 1, 
-                                            type='int', 
-                                            bounds=[0, None],
-                                            tip='Number of line to sweep before triggering the optimization')
-        # Add a table for the trajectories of the lines. 
         self.table_trajectories  = egg.gui.Table()
         self.place_object(self.table_trajectories, row=6, column=0, column_span=2) 
         # Fill it with some data
@@ -711,6 +705,9 @@ class GUIMagnetSweepLines(egg.gui.Window):
             self.zs_scanned.extend(xyzw[2])
             self.ws_scanned.extend(xyzw[3])
             
+            # Send a signal to inform that the line is done
+            self.event_one_line_is_swept()
+            
             # Update the condition of the scan
             self.iter += 1
             condition = self.is_running and self.iter<self.nb_iter
@@ -828,7 +825,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
         
     def event_scan_line_checkpoint(self):
         """
-        Dummy function to be overrid. 
+        Dummy function to be overrid. It should update the value of self.data_w
+        because this value will be appended to the list. 
         This is done when we scan a straight line, each time that we reach a
         point to record.
         """
@@ -839,6 +837,14 @@ class GUIMagnetSweepLines(egg.gui.Window):
         # fake 4-dimensional data. This should be overid, for example, by the 
         # photocounts
         self.data_w = np.random.poisson(1000)
+        
+    def event_one_line_is_swept(self):
+        """
+        Dummy funciton to be overrid. 
+        This is called each time that one line is swept.
+        """
+        _debug('GUIMagnetSweepLines: event_one_line_is_swept')
+        
         
 class GUIMagnetListSweep(egg.gui.Window):
     """

@@ -14,6 +14,7 @@ import gui_pulser
 import gui_saturation
 import gui_pipulse_optimization
 import gui_magnet
+from converter import Converter # For converting the pattern for counting
 
 import sys # Useful for error handling
 import traceback
@@ -84,8 +85,16 @@ class GUIMainExperiment(egg.gui.Window):
         self.gui_pulser     = gui_pulser.  GuiMainPulseSequence(self.fpga)
         self.gui_saturation = gui_saturation.     GUISaturation(self.fpga)
         self.gui_magnet     = gui_magnet.GUIMagnet()
-        #Connect the magnet with the counter
-        self.connect_magnet_with_counter()
+        #Connect the magnet event methods to the proper task.
+        # We do thatby overridding
+        self.gui_magnet.gui_sweep_lines.event_initiate_sweep = self.magnet_initiate_line_sweep
+        self.gui_magnet.gui_sweep_lines.event_scan_line_checkpoint = self.magnet_scan_line_checkpoint
+        # We also add an other element in the tree dictionnary, for the optimization
+        self.gui_magnet.gui_sweep_lines.add_parameter('nb_line_before_optimize', 1, 
+                                            type='int', 
+                                            bounds=[0, None],
+                                            tip='Number of line to sweep before triggering the optimization')
+        # Add a table for the trajectories of the lines. 
         
         # Replace the optimer button outside, for easy access
         self.place_object(self.gui_confocal.gui_optimizer.button_optimize,
@@ -191,15 +200,68 @@ class GUIMainExperiment(egg.gui.Window):
             # Also re-call the method of the confocal, because we just overid it :P 
             self.gui_confocal.after_optimization()
 
-    def connect_magnet_with_counter(self):
+    def magnet_initiate_line_sweep(self):
         """
-        Connect the magnet scanner with the counter and etc. 
-        This is done mostly by overriding functions. 
+        Initiate the fpga for the line line of the magnet. 
         """
-        _debug('GUIMainExperiment: connect_magnet_with_counter')
-#        # Overid the function
-#        self.gui_magnet.gui_sweep_lines.event_scan_line_checkpoint = 
-     
+        _debug('GUIMainExperiment: magnet_initiate_line_sweep')
+        
+        # Very similiar to the method "prepare_acquisition" of GUICount
+        # The main idea is to prepare the fpga for counting the right interval of time. 
+        
+        #First get the count time
+        self.count_time_ms = self.gui_magnet.gui_sweep_lines.treeDic_settings['time_per_point']
+        
+        # Set the fpga NOT in each tick mode
+        self.fpga.set_counting_mode(False)
+        
+        # Create the data array from counting
+        # Prepare DIO1 in state 1
+        self.fpga.prepare_DIOs([1], [1]) 
+        # Get the actual DIOs, because there might be other DIOs open.
+        self.dio_states = self.fpga.get_DIO_states() 
+        # Convert the instruction into the data array
+        conver = Converter() # Load the converter object.
+        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
+        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
+        
+         # Send the data_array to the FPGA
+        self.fpga.prepare_pulse(self.data_array)
+        
+    def magnet_scan_line_checkpoint(self):
+        """
+        Take the photocounts and update the value in the gui magnet
+        """
+        _debug('GUIMainExperiment: magnet_scan_line_checkpoint')
+        # The fpga should already contain the pulse sequence for taking the counts
+        
+        # Get the counts (d'uh !)
+        # Two step: runt he pulse pattern and get the counts. 
+        self.fpga.run_pulse() 
+        self.counts =  self.fpga.get_counts()[0]
+        self.gui_magnet.gui_sweep_lines.data_w = self.counts
+        
+        self.counts_per_sec = 1e3*self.counts/self.count_time_ms # Just if we care   
+        
+    def magnet_scan_line_optimize(self):
+        """
+        Trigger the optimization. 
+        """
+        _debug('GUIMainExperiment: magnet_scan_line_optimize')
+        
+        # Optimizae only if the sweep is still running. 
+        if self.gui_magnet.gui_sweep_lines.is_running:
+            iteration = self.gui_magnet.gui_sweep_lines.iter
+            m = self.gui_magnet.gui_sweep_lines.treeDic_settings['nb_line_before_optimize']
+            if m != 0:
+                # If it's zero, we never optimize
+                if iteration % m == (m-1):
+                    # Optimize
+                    #TODO make sure that we don't need to do more step (like pausing the magnet scan)
+                    self.gui_confocal.gui_optimizer.button_optimize_clicked()          
+        
+        
+
         
  
      
