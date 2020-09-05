@@ -575,6 +575,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
         # Put some header
         self.databox_save_scan.insert_header('name', 'Hakuna matata')
         self.databox_save_scan.insert_header('date', self.info_date)
+        self.databox_save_scan.insert_header('setting_file', self.path_setting)
+        
         # Copy the tree dictionnary
         for key in self.treeDic_settings.get_keys():
             # Add each element of the dictionnary three

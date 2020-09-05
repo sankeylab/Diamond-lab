@@ -90,7 +90,7 @@ class GUIMainExperiment(egg.gui.Window):
         self.gui_magnet.gui_sweep_lines.event_initiate_sweep = self.magnet_initiate_line_sweep
         self.gui_magnet.gui_sweep_lines.event_scan_line_checkpoint = self.magnet_scan_line_checkpoint
         # We also add an other element in the tree dictionnary, for the optimization
-        self.gui_magnet.gui_sweep_lines.add_parameter('nb_line_before_optimize', 1, 
+        self.gui_magnet.gui_sweep_lines.treeDic_settings.add_parameter('nb_line_before_optimize', 1, 
                                             type='int', 
                                             bounds=[0, None],
                                             tip='Number of line to sweep before triggering the optimization')
