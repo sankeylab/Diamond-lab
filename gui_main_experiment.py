@@ -195,7 +195,6 @@ class GUIMainExperiment(egg.gui.Window):
         if not(self.gui_confocal.gui_optimizer.is_optimizing): 
             
             if self.pulse_was_running_before_optimizing:
-                
                 # Reconvert the sequence, this is done after the pulse satrt button is clicked                
                 # Re-click on for continuing the pulse sequence. 
                 self.gui_pulser.button_start.click() # This continue the pulse  
