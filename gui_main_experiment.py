@@ -86,7 +86,7 @@ class GUIMainExperiment(egg.gui.Window):
         self.gui_saturation = gui_saturation.     GUISaturation(self.fpga)
         self.gui_magnet     = gui_magnet.GUIMagnet()
         #Connect the magnet event methods to the proper task.
-        # We do thatby overridding
+        # We do that by overridding
         self.gui_magnet.gui_sweep_lines.event_initiate_sweep = self.magnet_initiate_line_sweep
         self.gui_magnet.gui_sweep_lines.event_scan_line_checkpoint = self.magnet_scan_line_checkpoint
         # We also add an other element in the tree dictionnary, for the optimization
@@ -94,7 +94,8 @@ class GUIMainExperiment(egg.gui.Window):
                                             type='int', 
                                             bounds=[0, None],
                                             tip='Number of line to sweep before triggering the optimization')
-        # Add a table for the trajectories of the lines. 
+        self.gui_magnet.gui_sweep_lines.event_one_line_is_swept = self.magnet_scan_line_optimize
+        
         
         # Replace the optimer button outside, for easy access
         self.place_object(self.gui_confocal.gui_optimizer.button_optimize,
@@ -256,6 +257,7 @@ class GUIMainExperiment(egg.gui.Window):
             if m != 0:
                 # If it's zero, we never optimize
                 if iteration % m == (m-1):
+                    _debug('GUIMainExperiment: magnet_scan_line_optimize:decide to optimize')
                     # Optimize
                     #TODO make sure that we don't need to do more step (like pausing the magnet scan)
                     self.gui_confocal.gui_optimizer.button_optimize_clicked()          
@@ -270,9 +272,10 @@ if __name__ == '__main__':
     import fpga_control as _fc
     
     _debug_enabled     = True
-    gui_pulser._debug_enabled = True
+    gui_pulser._debug_enabled = False
     gui_confocal_main._debug_enabled = False
     gui_pipulse_optimization._debug_enabled = True
+    gui_magnet._debug_enabled = True
     
     print('Hey on es-tu bin en coton-watte')
     

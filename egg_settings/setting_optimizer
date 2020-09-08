@@ -1,8 +1,21 @@
 Usual|expanded	True
-Usual/Range_Vx	0.07
+Usual/Range_Vx	0.05
 Usual/Range_Vx|expanded	True
-Usual/Range_Vy	0.1
+Usual/Range_Vy	0.08
 Usual/Range_Vy|expanded	True
 Usual/Range_Vz	1.5
 Usual/Range_Vz|expanded	True
+Usual/Offset_Vx	0.0
+Usual/Offset_Vx|expanded	True
+Usual/Offset_Vy	0.0
+Usual/Offset_Vy|expanded	True
+Usual/Offset_Vz	0.0
+Usual/Offset_Vz|expanded	True
+Usual/Count_time	50.0
+Usual/Count_time|expanded	True
+Usual/Scan_points	25
+Usual/Scan_points|expanded	True
+Automatic|expanded	True
+Automatic/Threshold_fraction	0.95
+Automatic/Threshold_fraction|expanded	True
 

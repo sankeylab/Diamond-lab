@@ -359,6 +359,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
                                             type='float', 
                                             bounds=[0.0001, None], suffix=' um',
                                             tip='Distance between each point to record')
+        # Add a table for the trajectories of the lines. 
         self.table_trajectories  = egg.gui.Table()
         self.place_object(self.table_trajectories, row=6, column=0, column_span=2) 
         # Fill it with some data
@@ -492,7 +493,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
         txt = ('Settings: '+ self.path_setting.split('/')[-1]+
                '\nStatut: '+ self.statut +
                '\nSpeed along line: %f mm/s'%self.speed+
-               '\nNumber of lines: %d'%self.nb_iter+
+               '\nNumber of lines: %d'%(self.nb_iter-1)+
                '\nCurrent line: %d'%self.iter)
         
         self.label_info.set_text( txt ) 
@@ -693,7 +694,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
             # Allow the GUI to update. This is important to avoid freezing of the GUI inside loops
             self.process_events()    
             # Update the info shown
-            self.statut = 'Sweeping along a line'
+            self.statut = 'Sweeping along line %d'%self.iter
             self.label_info_update()
             # Move along the line
             x = self.xs_setting[self.iter]
@@ -707,6 +708,10 @@ class GUIMagnetSweepLines(egg.gui.Window):
             self.zs_scanned.extend(xyzw[2])
             self.ws_scanned.extend(xyzw[3])
             
+            # Update the info shown
+            self.statut = 'The line %d is completed'%self.iter
+            self.label_info_update()
+
             # Send a signal to inform that the line is done
             self.event_one_line_is_swept()
             
