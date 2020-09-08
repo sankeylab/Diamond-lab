@@ -64,6 +64,7 @@ class GUIMainExperiment(egg.gui.Window):
         
         # Some attribute
         self.pulse_was_running_before_optimizing = False
+        self.magnet_scan_line_was_running_before_optimizing = False
         
         # Fill the GUI
         self.initialize_GUI()  
@@ -186,17 +187,24 @@ class GUIMainExperiment(egg.gui.Window):
     def after_optimization(self):
         """
         What to do after that the optimization is done.
+        This will depend on what was running before the optimization. 
         """
         _debug('GUIMainExperiment: after_optimization')
         
-        # The if might be not necessary, or it is overkill.
+        # The if condition might be not necessary, or it is overkill.
         if not(self.gui_confocal.gui_optimizer.is_optimizing): 
             
             if self.pulse_was_running_before_optimizing:
-                # Reconverted the sequence
                 
+                # Reconvert the sequence, this is done after the pulse satrt button is clicked                
                 # Re-click on for continuing the pulse sequence. 
-                self.gui_pulser.button_start.click() # This continue the pulse           
+                self.gui_pulser.button_start.click() # This continue the pulse  
+                
+            if self.magnet_scan_line_was_running_before_optimizing:
+                # Need to reconvert the pulse sequence in the FPGA for the magnetic scan
+                self.magnet_initiate_line_sweep() # Everything is done in this method
+                
+                
             
             # Also re-call the method of the confocal, because we just overid it :P 
             self.gui_confocal.after_optimization()
@@ -258,8 +266,10 @@ class GUIMainExperiment(egg.gui.Window):
                 # If it's zero, we never optimize
                 if iteration % m == (m-1):
                     _debug('GUIMainExperiment: magnet_scan_line_optimize:decide to optimize')
+                    
+                    # Note that it was the magnet line scan that was running
+                    self.magnet_scan_line_was_running_before_optimizing = True
                     # Optimize
-                    #TODO make sure that we don't need to do more step (like pausing the magnet scan)
                     self.gui_confocal.gui_optimizer.button_optimize_clicked()          
         
         
