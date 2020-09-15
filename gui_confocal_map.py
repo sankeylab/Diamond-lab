@@ -49,7 +49,7 @@ class GUIMap(egg.gui.Window):
         Initialize 
         
         fpga:
-            "FPGA_api" object from fpga_control.py. 
+            "FPGA_api" object from api_fpga.py. 
             This is the object shared amoung the GUIs for controlling the fpga. 
             The session of the fpga must already be open.
             
@@ -1229,7 +1229,7 @@ class PersonalColorMap():
 
 if __name__ == '__main__':
     
-    import fpga_control as _fc
+    import api_fpga as _fc
     
     _debug_enabled     = True
     _fc._debug_enabled = False

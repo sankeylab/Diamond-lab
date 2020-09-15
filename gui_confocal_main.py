@@ -41,7 +41,7 @@ class GUIMainConfocal(egg.gui.Window):
     def __init__(self, fpga, name="Best confocal of the world", size=[1800,1000]): 
         """
         fpga:
-            "FPGA_api" object from fpga_control.py. 
+            "FPGA_api" object from api_fpga.py. 
             This is the object shared amoung the GUIs for controlling the fpga. 
             The session of the fpga must already be open.    
             
@@ -190,7 +190,7 @@ class GUIMainConfocal(egg.gui.Window):
 
 if __name__ == '__main__':
     
-    import fpga_control as _fc
+    import api_fpga as _fc
     import gui_confocal_counts as cc
     import gui_confocal_optimizer as co
     import gui_confocal_DIOsAOs_control as cdc

@@ -12,7 +12,7 @@ from spinmob import egg
 import traceback
 _p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
 
-import fpga_control as _fc
+import api_fpga as _fc
 from converter import Converter # This convert the sequence object into fpga data
 from pulses import GUIPulsePattern
 from pulses import ChannelPulses, PulsePatternBlock, Sequence
@@ -42,7 +42,7 @@ class GuiMainPulseSequence(egg.gui.Window):
     def __init__(self, fpga, name="Best pulser of the world", size=[1400,700]): 
         """
         fpga:
-            "FPGA_api" object from fpga_control.py. 
+            "FPGA_api" object from api_fpga.py. 
             This is the object shared amoung the GUIs for controlling the fpga. 
             The session of the fpga must already be open.    
         """    
@@ -1058,7 +1058,7 @@ class GUIPredefined(egg.gui.Window):
     def __init__(self, fpga,  name="Counts", size=[700,500]): 
         """
         fpga:
-            "FPGA_api" object from fpga_control.py. 
+            "FPGA_api" object from api_fpga.py. 
             This is the object shared amoung the GUIs for controlling the fpga. 
             The session of the fpga must already be open.
 
