@@ -278,8 +278,11 @@ class GUIMap(egg.gui.Window):
         
         # Prepare the fpga with the values    
         self.fpga.prepare_AOs([AOz], [Vz])
-        # Write it now ;) 
-        self.fpga.write_output()        
+        
+        #DO NOT JUST WRITE OUTPUT. THIS FUCKED UP THE FIFO 
+#        # Write it now ;) 
+#        self.fpga.write_output()    
+        self.fpga.run_pulse()
 
         # Call the event to say "hey, stuff changed on the fpga"
         self.event_fpga_change()
@@ -1027,8 +1030,10 @@ class GUIMap(egg.gui.Window):
         # Prepare the voltage
         self.list_Vs = [Vx]
         self.fpga.prepare_AOs(self.list_AOs, self.list_Vs)     
-        # Write in the fpga
-        self.fpga.write_output()
+        #DO NOT JUST WRITE OUTPUT. THIS FUCKED UP THE FIFO 
+#        # Write it now ;) 
+#        self.fpga.write_output()    
+        self.fpga.run_pulse()
 
         # Call the event to say "hey, stuff changed on the fpga"
         self.event_fpga_change()
@@ -1045,8 +1050,10 @@ class GUIMap(egg.gui.Window):
         # Prepare the voltage
         self.list_Vs = [Vy]
         self.fpga.prepare_AOs(self.list_AOs, self.list_Vs)     
-        # Write in the fpga
-        self.fpga.write_output()        
+        #DO NOT JUST WRITE OUTPUT. THIS FUCKED UP THE FIFO 
+#        # Write it now ;) 
+#        self.fpga.write_output()    
+        self.fpga.run_pulse()   
 
         # Call the event to say "hey, stuff changed on the fpga"
         self.event_fpga_change()
@@ -1057,6 +1064,7 @@ class GUIMap(egg.gui.Window):
         That is useful for the implementation with other GUI that also 
         modifies the fpga. 
         """
+        _debug('GUIMap: update_GUI_with_fpga')
         
         if not(self.is_scanning): # Don't mess up with the scan lol
             # Update the value of the Z voltage
