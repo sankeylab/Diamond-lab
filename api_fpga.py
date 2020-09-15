@@ -444,7 +444,8 @@ class FPGA_api():
 #            _debug('start.read = ', self.start.read())
 #            _debug("Element remaing: ", num_elems)
             # Read the elements remaining and store them into counts 
-            self.counts.extend( self.th_fifo.read(num_elems).data )
+            count_array = self.th_fifo.read(num_elems).data # It output an array containing each count
+            self.counts.extend( count_array ) # This adds each element of the input array
             # Update the while loop condition
             condition2 = num_elems>0
             condition = condition1 or condition2
