@@ -223,6 +223,13 @@ class FPGA_api():
         
     def write_output(self):
         """
+        WARNING: 
+            Never call this method alone if you are not certaint that the 
+            pulse sequence willn not fill up the fifo. If you just want to set the
+            DIO and AO value, you still need to run the whole pulse sequence. I put 
+            this warning because I got serious issues with the fifo and the counts
+            byt just writing the output !
+        
         Write the AOs and the DIOs in the fpga. 
         The order of what gonna happend can be found in the Labview VI
         “FPGA FULL V2.vi”
