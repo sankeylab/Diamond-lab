@@ -798,7 +798,8 @@ class GuiMainPulseSequence(egg.gui.Window):
         _debug('GuiMainPulseSequence: show_sequence')
         
         # Show the GUI
-        GUIFPGAInstruction(self.data_array, self.rep, self.length_data_block_s)
+        GUIFPGAInstruction(self.data_array,self.rep, self.length_data_block_s,
+                           list_DIO_to_show=range(8)) # Only show the 8 first DIO
         
     def event_optimize(self):
         """
