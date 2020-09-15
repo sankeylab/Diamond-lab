@@ -278,7 +278,7 @@ class GUIMainExperiment(egg.gui.Window):
      
 if __name__ == '__main__':
     
-    import fpga_control as _fc
+    import fpga_control 
     
     _debug_enabled     = True
     gui_pulser._debug_enabled = True
@@ -287,7 +287,7 @@ if __name__ == '__main__':
     gui_magnet._debug_enabled = False
     import gui_confocal_optimizer
     gui_confocal_optimizer._debug_enabled = True
-    _fc.debug_enabled = True
+    fpga_control.debug_enabled = True
     
     print('Hey on es-tu bin en coton-watte')
     
@@ -295,7 +295,7 @@ if __name__ == '__main__':
     bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
                     "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
     resource_num = "RIO0"     
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+    fpga = fpga_control.FPGA_api(bitfile_path, resource_num) # Create the api   
     fpga.open_session()
     
     self = GUIMainExperiment(fpga)

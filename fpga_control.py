@@ -319,6 +319,7 @@ class FPGA_api():
         if len(list_DIO_state)==16:
             self.list_DIO_states = list_DIO_state
         
+        #TODO Erase this test if we no longer need to test that
 #        #TEST
 #        self.data = np.concatenate((self.data, self.data))
         
@@ -370,7 +371,10 @@ class FPGA_api():
             # Update the while loop condition
             condition2 = num_elems>0
             condition = condition1 or condition2
-        
+
+        print('start.read = ', self.start.read())
+        print("Counts = %s" % self.counts)
+        print("Element remaing: ", num_elems)        
         _debug('start.read = ', self.start.read())
         _debug("Counts = %s" % self.counts)
         _debug("Element remaing: ", num_elems)

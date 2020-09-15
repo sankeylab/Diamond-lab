@@ -229,6 +229,9 @@ class GUIOptimizer(egg.gui.Window):
             i += 1
             V = self.Vs[i]
             self.fpga.prepare_AOs([self.AO], [V])
+            # Prepare the pulse sequence for getting the counts
+            self.prepare_acquisition_pulse()            
+            
             # Get the count, finally ;) 
             # Two step: runt he pulse pattern and get the counts. 
             self.fpga.run_pulse() # This will also write the AOs
@@ -308,8 +311,9 @@ class GUIOptimizer(egg.gui.Window):
         self.wait_after_AOs_us = int(self.treeDict_map['Wait_after_AOs'])
         print(self.AOx, self.AOy, self.AOz, self.wait_after_AOs_us)
 
-        # Prepare the pulse sequence for getting the counts
-        self.prepare_acquisition_pulse()
+#TODO uncomment if needed
+#        # Prepare the pulse sequence for getting the counts
+#        self.prepare_acquisition_pulse()
         
         # Optimize the X direction
         self.AO = self.AOx
