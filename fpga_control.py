@@ -275,6 +275,7 @@ class FPGA_api():
         _debug('FPGA_api: get_AO_voltage')
         bits = self._fpga.registers['AO%d'%AO].read()
         return bits/self.bit_per_volt
+#        return 2
     
     def get_wait_time_us(self):
         """
@@ -289,6 +290,21 @@ class FPGA_api():
         """
         _debug('FPGA_api: get_data_array')
         return self.data
+    
+    def configure_fifo(self):
+        """
+        Configutre the fifo for the data array
+        """
+        _debug('FPGA_api: configure_fifo')
+        
+        ht_size = self.ht_fifo.configure(len(self.data)) # Attempt to set host->target size
+        _debug('HT Size: %d' % ht_size) # Get returned, acutal size
+        self.h_to_t.write(ht_size) # Let FPGA know the real size
+        self.th_fifo.configure(ht_size) # Set target->host size with true size
+        
+        # Stop FIFOs
+        self.ht_fifo.stop()
+        self.th_fifo.stop()        
     
     def prepare_pulse(self, data_array, is_zero_ending=True, list_DIO_state=[] ):
         """
@@ -319,19 +335,8 @@ class FPGA_api():
         if len(list_DIO_state)==16:
             self.list_DIO_states = list_DIO_state
         
-        #TODO Erase this test if we no longer need to test that
-#        #TEST
-#        self.data = np.concatenate((self.data, self.data))
-        
         # Configuring FIFO sizes
-        ht_size = self.ht_fifo.configure(len(self.data)) # Attempt to set host->target size
-        _debug('HT Size: %d' % ht_size) # Get returned, acutal size
-        self.h_to_t.write(ht_size) # Let FPGA know the real size
-        self.th_fifo.configure(ht_size) # Set target->host size with true size
-        
-        # Stop FIFOs
-        self.ht_fifo.stop()
-        self.th_fifo.stop()
+        self.configure_fifo()
         
         _debug('ht_fifo datatype: ', self.ht_fifo.datatype)      
         
