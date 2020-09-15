@@ -266,13 +266,13 @@ class GUIOptimizer(egg.gui.Window):
             self.popt, self.pcov = curve_fit(self.parabola, xdata, ydata, p0=self.p0)
             v_fit = self.popt[0]
             if v_fit > self.Vmax:
-                _debug('GUIOptimizer: find_max: vmax !')
+                _debug('GUIOptimizer: find_max: choose vmax!')
                 self.v_best = self.Vmax
             elif v_fit < self.Vmin:
-                _debug('GUIOptimizer: find_max: vmin !')
+                _debug('GUIOptimizer: find_max: choose vmin!')
                 self.v_best = self.Vmin
             else:
-                _debug('GUIOptimizer: find_max: v okay !')
+                _debug('GUIOptimizer: find_max: choose in the fit !')
                 self.v_best = v_fit
             # Put the FPGA with this AO at the voltage of maximum counts
             self.fpga.prepare_AOs([self.AO], [self.v_best])  
