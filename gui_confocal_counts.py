@@ -287,7 +287,7 @@ class GUICounts(egg.gui.Window):
         That is useful for the implementation with other GUI that also 
         modifies the fpga. 
         """
-        _debug('GUIDIOsAOsControl: update_GUI_with_fpga')
+        _debug('GUICounts: update_GUI_with_fpga')
         # There is nothing to update with the fpga. 
         # The count time interval is note recored in the fpga, because it is 
         # hidden in the data array

@@ -53,6 +53,7 @@ class FPGA_api():
         self.resource_num = resource_num
         
         self.list_DIO_states = np.zeros(16) # List of the steady state of the DIOs
+        self.list_AO_values  = np.zeros(8) # List of the volateg set on the AO
         self.data = np.array([1], dtype='int32') # Initial data array
         
         # Magic number for converting voltage into bits for the AOs
@@ -140,6 +141,12 @@ class FPGA_api():
         if not(len( AO_list) == len(voltage_list)):
             print('ERROR: The list of AOs do not match the list of voltage')
             return -1
+
+        # The following magic line record the AO to the corresponding state
+        self.list_AO_values[AO_list] = voltage_list
+        #TODO remove the following. It is equivalent to the previous command. 
+#        for i in range(AO_list):
+#            self.list_AO_values[i] = voltage_list[i]
         
         for i in range(len(AO_list)):
             AO = AO_list[i]
@@ -231,6 +238,23 @@ class FPGA_api():
         # Trigger fpga start
         self.start.write(True)        
 
+    def read_register_AO(AO):
+        """
+        DANGEROUS METHOD which read the value of the AO on the register. 
+        It is dangerous because I noticed that it changes the behavior of the 
+        fifo. That was a source of important issue when I was optimizing during
+        a pulse sequence. During the optimization, we were updating the value
+        of the AO in the GUI. This was done by reading the register directly. 
+        When we were coming back to the pulse sequence, there was element 
+        remaingin in the fifo and the count array was not matching the 
+        expectation from the pulse sequence. 
+        
+        """
+        _debug('FPGA_api: read_register_AO')
+        
+        bits = self._fpga.registers['AO%d'%AO].read()
+        return bits/self.bit_per_volt        
+
     def read_AI1(self):
         """
         Read the value of AI1. 
@@ -273,9 +297,14 @@ class FPGA_api():
             (Int) Number for the AO to read. 
         """
         _debug('FPGA_api: get_AO_voltage')
-        bits = self._fpga.registers['AO%d'%AO].read()
-        return bits/self.bit_per_volt
-#        return 2
+        self.AO_returned_value = self.list_AO_values[int(AO)]
+#        return self.AO_returned_value
+#        return float(self.list_AO_values[int(AO)])
+        return 2.5 # For testing
+#        xs = np.linspace(-5, 8, 8)
+#        return xs[int(AO)]
+#        self.xs = np.linspace(-5, 8, 8)
+#        return self.xs[int(AO)]   
     
     def get_wait_time_us(self):
         """
@@ -377,9 +406,9 @@ class FPGA_api():
             condition2 = num_elems>0
             condition = condition1 or condition2
 
-        print('start.read = ', self.start.read())
-        print("Counts = %s" % self.counts)
-        print("Element remaing: ", num_elems)        
+#        print('start.read = ', self.start.read())
+#        print("Counts = %s" % self.counts)
+#        print("Element remaing: ", num_elems)        
         _debug('start.read = ', self.start.read())
         _debug("Counts = %s" % self.counts)
         _debug("Element remaing: ", num_elems)

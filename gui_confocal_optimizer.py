@@ -228,14 +228,14 @@ class GUIOptimizer(egg.gui.Window):
         while self.is_optimizing and (i<(len(self.Vs)-1)):
             i += 1
             V = self.Vs[i]
-            self.fpga.prepare_AOs([self.AO], [V])
+            self.fpga.prepare_AOs([int(self.AO)], [V])
             
             # Get the count, finally ;) 
             # Two step: runt he pulse pattern and get the counts. 
             self.fpga.run_pulse() # This will also write the AOs
             self.counts =  self.fpga.get_counts()[0]
             
-#            # Add some fake to the data
+#            # FOR TESTING ONLY Add some fake to the data
 #            self.counts+= np.random.poisson(1000-200*(V-self.V0)**2/(self.Vmax-self.V0)**2)
 #            print(self.counts)
             self.count_array.append(self.counts)

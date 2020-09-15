@@ -192,10 +192,16 @@ if __name__ == '__main__':
     
     import fpga_control as _fc
     import gui_confocal_counts as cc
+    import gui_confocal_optimizer as co
+    import gui_confocal_DIOsAOs_control as cdc
+    import gui_confocal_map as cm
     
+    cm._debug_enabled  = True
+    cdc._debug_enabled = True
+    co._debug_enabled  = True
     cc._debug_enabled  = True
     _debug_enabled     = True
-    _fc._debug_enabled = False
+    _fc._debug_enabled = True
     
     print('Hey on es-tu bin en coton-watte')
     
