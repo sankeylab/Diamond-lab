@@ -114,6 +114,9 @@ class GUIDIOsAOsControl(egg.gui.Window):
         """
         Update the value of the voltage on the AOs. 
         Also Automatically write it on the FPGA, with no wait time. 
+        
+        It doesn't clean the existing pulse sequence. It just readjusting the 
+        DIOs and the AOs on the settings
         """
         _debug('GUIDIOsAOsControl: update_fpga')
 
@@ -152,10 +155,8 @@ class GUIDIOsAOsControl(egg.gui.Window):
                                 list_DIO_state = self.new_DIO_states)            
         self.fpga.prepare_wait_time(self.fpga.get_wait_time_us()) 
         
-        #DO NOT JUST WRITE OUTPUT. THIS FUCKED UP THE FIFO 
-#        # Write it now ;) 
-#        self.fpga.write_output()    
-        self.fpga.run_pulse()   
+        # Run the FPGA with all these settings
+        self.fpga.lets_go_FPGA()  
         
         # Call the event to say "hey, stuff changed on the fpga"
         self.event_fpga_change()
