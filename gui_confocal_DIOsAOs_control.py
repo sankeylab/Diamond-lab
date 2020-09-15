@@ -151,8 +151,11 @@ class GUIDIOsAOsControl(egg.gui.Window):
                                 is_zero_ending=False,
                                 list_DIO_state = self.new_DIO_states)            
         self.fpga.prepare_wait_time(self.fpga.get_wait_time_us()) 
-        # Write it now ;) 
-        self.fpga.write_output()     
+        
+        #DO NOT JUST WRITE OUTPUT. THIS FUCKED UP THE FIFO 
+#        # Write it now ;) 
+#        self.fpga.write_output()    
+        self.fpga.run_pulse()   
         
         # Call the event to say "hey, stuff changed on the fpga"
         self.event_fpga_change()

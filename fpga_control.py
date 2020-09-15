@@ -53,7 +53,7 @@ class FPGA_api():
         self.resource_num = resource_num
         
         self.list_DIO_states = np.zeros(16) # List of the steady state of the DIOs
-        self.list_AO_values  = np.zeros(8) # List of the volateg set on the AO
+        self.list_AO_values_set  = np.zeros(8) # List of the volateg set on the AO
         self.data = np.array([1], dtype='int32') # Initial data array
         
         # Magic number for converting voltage into bits for the AOs
@@ -143,7 +143,7 @@ class FPGA_api():
             return -1
 
         # The following magic line record the AO to the corresponding state
-        self.list_AO_values[AO_list] = voltage_list
+        self.list_AO_values_set[AO_list] = voltage_list
         #TODO remove the following. It is equivalent to the previous command. 
 #        for i in range(AO_list):
 #            self.list_AO_values[i] = voltage_list[i]
@@ -297,14 +297,17 @@ class FPGA_api():
             (Int) Number for the AO to read. 
         """
         _debug('FPGA_api: get_AO_voltage')
-        self.AO_returned_value = self.list_AO_values[int(AO)]
+#        self.AO_returned_value = self.list_AO_values[int(AO)]
 #        return self.AO_returned_value
 #        return float(self.list_AO_values[int(AO)])
-        return 2.5 # For testing
+#        return 2.5 # For testing
 #        xs = np.linspace(-5, 8, 8)
 #        return xs[int(AO)]
 #        self.xs = np.linspace(-5, 8, 8)
 #        return self.xs[int(AO)]   
+        bits = self._fpga.registers['AO%d'%AO].read()
+        volt = bits/self.bit_per_volt    
+        return  volt
     
     def get_wait_time_us(self):
         """
