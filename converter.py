@@ -457,6 +457,10 @@ class GUIFPGAInstruction():
             length_data_block_s
             Array containt the length of each block in the sequence
             
+        For example, if you want to show the whole data array instruction, you 
+        can initiate the GUI like this:
+            GUIFPGAInstruction(d, 1, [len(d)])
+            
         """    
         
         self.data_array = data_array
