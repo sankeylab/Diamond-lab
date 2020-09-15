@@ -226,7 +226,7 @@ class FPGA_api():
         Write the AOs and the DIOs in the fpga. 
         The order of what gonna happend can be found in the Labview VI
         “FPGA FULL V2.vi”
-        It first set the AOs. Then it waits. Then it apply the pulse sequence. 
+        It first sets the AOs. Then it waits. Then it applies the pulse sequence. 
         Then it reads AI1. 
         
         """
@@ -373,6 +373,38 @@ class FPGA_api():
         _debug('ht_fifo datatype: ', self.ht_fifo.datatype)      
         
       
+    def lets_go_FPGA(self):
+        """
+        Ultimate function for running the FPGA. 
+        It triggers the write output and read all fifo (ie counts) that the FPGA
+        will produce. 
+        
+        For the write output, see the method "write_output. This is the 
+        definition of write_output:
+            Write the AOs and the DIOs in the fpga. 
+            The order of what gonna happend can be found in the Labview VI
+            “FPGA FULL V2.vi”
+            It first sets the AOs. Then it waits. Then it applies the pulse sequence. 
+            Then it reads AI1.          
+            
+        After that, very important, it reads all the element in the fifo that 
+        the pulse sequence generates. This is the counts, when DIO1 is ON in 
+        the pulse sequence. 
+        
+        You will notice that, for now, this function is just calling run_pulse()
+        THis is because run_pulse() is doing everything. I decided to create 
+        "lets_go_FPGA" in order to clarify some piece of code that as very simple 
+        pulse sequence and the FPGA is called just for settings some DIOs and AOs 
+        values.Since the name "run_pulse" is not well appropriate in these case,
+        I create this redundant method for avoiding to rename all the other call
+        to "run_pulse".
+        
+        """
+        _debug('FPGA_api: lets_go_FPGA')
+        # Yes. It's that simpler. 
+        self.run_pulse()
+        
+        
     def run_pulse(self):
         """
         Start the FPGA for when there is a pulse sequence. 
