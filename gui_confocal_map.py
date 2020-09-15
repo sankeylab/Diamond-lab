@@ -279,10 +279,10 @@ class GUIMap(egg.gui.Window):
         # Prepare the fpga with the values    
         self.fpga.prepare_AOs([AOz], [Vz])
         
-        #DO NOT JUST WRITE OUTPUT. THIS FUCKED UP THE FIFO 
-#        # Write it now ;) 
-#        self.fpga.write_output()    
-        self.fpga.run_pulse()
+        # Run the FPGA for updating its settings
+        # It gonna run also the pre-existing pulse sequence. Hopefully it's 
+        # gonna be the counter. 
+        self.fpga.lets_go_FPGA()
 
         # Call the event to say "hey, stuff changed on the fpga"
         self.event_fpga_change()
@@ -1029,11 +1029,12 @@ class GUIMap(egg.gui.Window):
         self.list_AOs = [self.AOx]
         # Prepare the voltage
         self.list_Vs = [Vx]
-        self.fpga.prepare_AOs(self.list_AOs, self.list_Vs)     
-        #DO NOT JUST WRITE OUTPUT. THIS FUCKED UP THE FIFO 
-#        # Write it now ;) 
-#        self.fpga.write_output()    
-        self.fpga.run_pulse()
+        self.fpga.prepare_AOs(self.list_AOs, self.list_Vs)   
+        
+        # Run the FPGA for updating its settings
+        # It gonna run also the pre-existing pulse sequence. Hopefully it's 
+        # gonna be the counter. 
+        self.fpga.lets_go_FPGA()
 
         # Call the event to say "hey, stuff changed on the fpga"
         self.event_fpga_change()
@@ -1049,11 +1050,12 @@ class GUIMap(egg.gui.Window):
         self.list_AOs = [self.AOy]
         # Prepare the voltage
         self.list_Vs = [Vy]
-        self.fpga.prepare_AOs(self.list_AOs, self.list_Vs)     
-        #DO NOT JUST WRITE OUTPUT. THIS FUCKED UP THE FIFO 
-#        # Write it now ;) 
-#        self.fpga.write_output()    
-        self.fpga.run_pulse()   
+        self.fpga.prepare_AOs(self.list_AOs, self.list_Vs)  
+    
+        # Run the FPGA for updating its settings
+        # It gonna run also the pre-existing pulse sequence. Hopefully it's 
+        # gonna be the counter. 
+        self.fpga.lets_go_FPGA()
 
         # Call the event to say "hey, stuff changed on the fpga"
         self.event_fpga_change()

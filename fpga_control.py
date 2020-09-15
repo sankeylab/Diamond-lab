@@ -353,7 +353,8 @@ class FPGA_api():
         list_DIO_state:
             If the lenght is 16, it's gonna record the DIO states to be this list. 
             That is useful for keeping track of which state are on and off when 
-            the object is shared between other objects (like gui)
+            the object is shared between other objects (like gui). 
+            Otherwise it can be ignored.
         """
         _debug('FPGA_api: prepare_pulse')
         

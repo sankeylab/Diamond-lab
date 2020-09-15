@@ -213,6 +213,7 @@ class GUICounts(egg.gui.Window):
         # Take counts until the elapsed time is higher than the desired 
         # acquisition time OR until we click on stop and is_taking_count gets false.
         while self.is_taking_counts:
+            
             # Get the counts (d'uh !)
             # Two step: runt he pulse pattern and get the counts. 
             self.fpga.run_pulse() 
