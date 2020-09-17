@@ -276,12 +276,13 @@ class GUIOptimizer(egg.gui.Window):
                 _debug('GUIOptimizer: find_max: choose in the fit !')
                 self.v_best = v_fit
             # Put the FPGA with this AO at the voltage of maximum counts
-            self.fpga.prepare_AOs([self.AO], [self.v_best])  
+            self.fpga.prepare_AOs([int(self.AO)], [self.v_best])  
             
             # Call the event to say "hey, stuff changed on the fpga"
             self.event_fpga_change()                
             
             self.fit_worked = True
+            
         except:
             _debug('GUIOptimizer: find_max: Cannot fit!')
             # Do not change the AO
