@@ -288,6 +288,8 @@ class GUIOptimizer(egg.gui.Window):
             self.fit_worked = False
             # Still not the best V, for keeping track of it..
             self.v_best = self.V0 
+            
+        _debug('GUIOptimizer: find_max: v_best = ', self.v_best)
  
         
         

@@ -8,15 +8,15 @@ AO_y	1
 AO_y|expanded	True
 AO_z	2
 AO_z|expanded	True
-X_min	-0.9462209294290276
+X_min	-0.5855836084680774
 X_min|expanded	True
-X_max	-0.47251095780244645
+X_max	0.3160431571604274
 X_max|expanded	True
 Nb_point_X	100
 Nb_point_X|expanded	True
-Y_min	-1.462141554415494
+Y_min	-0.7442761648815353
 Y_min|expanded	True
-Y_max	-0.8581093763552854
+Y_max	0.31604315716043097
 Y_max|expanded	True
 Nb_point_Y	100
 Nb_point_Y|expanded	True
@@ -28,6 +28,6 @@ Set_aspect	True
 Set_aspect|expanded	True
 yfactor_aspect_ratio	1.0
 yfactor_aspect_ratio|expanded	True
-Scanning_mode	'Snake'
+Scanning_mode	'Sawtooth'
 Scanning_mode|expanded	True
 
