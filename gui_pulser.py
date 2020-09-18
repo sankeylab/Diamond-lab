@@ -327,6 +327,9 @@ class GuiMainPulseSequence(egg.gui.Window):
         # Set the delay
         self.gui_pulse_builder.button_set_delays.click()
         
+        # Put a very low number of repetition, just in case we forget to do so. 
+        # ecause the sequence is, in general, slow. 
+        self.gui_pulse_builder.NumberBox_repetition.set_value(1)
         
         # Prepare the setting for the signal generator
         self.fmin = self.gui_ESR.treeDic_settings['f_min']
@@ -1401,6 +1404,13 @@ class GUIESR(egg.gui.Window):
         _debug('GUIESR: databoxplot_update')
         # CLear the plot
         self.databoxplot.clear() 
+
+        # Add important information in the header
+        self.databoxplot.insert_header('repetition', self.rep)
+        self.databoxplot.insert_header('iteration' , self.iteration)
+        for key in self.treeDic_settings.get_keys():
+            # Add each element of the dictionnary three
+            self.databoxplot.insert_header(key , self.treeDic_settings[key])
                 
         self.databoxplot['Frequency_(GHz)'] = self.x_axis
         # Loop over each readout 
@@ -1427,6 +1437,10 @@ class GUIESR(egg.gui.Window):
             Number of repetition of the sequence into the fpga instruction
             """
         _debug('GUIESR: after_one_loop')
+
+        # Note that for saving 
+        self.rep = rep
+        self.iteration = iteration
         
         # Get the counts per readout per block
         self.count_processor = _fc.ProcessFPGACounts(counts)
