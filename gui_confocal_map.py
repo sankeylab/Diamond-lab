@@ -835,6 +835,72 @@ class GUIMap(egg.gui.Window):
             # Allow the GUI to update. This is important to avoid freezing of the GUI inside loops
             self.process_events()    
 
+    def scan_random_point_sweep(self):
+        """
+        This scans random points on the map. 
+        """
+        _debug('GUIMap: scan_row_snake')
+             
+        # Start the scan
+        self.row = 0
+        while self.is_scanning and self.row<len(self.ys):
+            # Note the time at which the row starts
+            self.time_row_start = time.time()
+            _debug('Sssssssnake Row ', self.row)
+        
+            # Get the voltrage in Y
+            Vy = self.ys[self.row]
+            
+            # Note the order of the index to scan depending on which row we 
+            # have for doing the snake scan.
+            if self.row%2 == 0:
+                i_s = range(len( self.xs ))
+            else:
+                i_s  = np.flip(range(len( self.xs )))
+            
+            # Scan this set of index
+            for i in i_s:
+                
+                # Get the voltage in x
+                Vx = self.xs[i]
+                
+                # Update the voltage of the AOs
+                self.list_AOs = [self.AOx, self.AOy, self.AOz]
+                self.list_Vs = [Vx, Vy, self.Vz]
+                self.fpga.prepare_AOs(self.list_AOs, self.list_Vs)
+                
+                # Get the count, finally ;) 
+                # Two step: runt he pulse pattern and get the counts. 
+                self.fpga.run_pulse() # This will also write the AOs
+                self.counts =  self.fpga.get_counts()[0]
+                self.counts_per_sec = 1e3*self.counts/self.count_time_ms
+                
+                # Since zero is boring, let's add something
+    #                image = self.counts + np.random.poisson( np.abs(1000*np.cos(Vx*Vy*0.5)) )
+    #                self.Z[self.row][i]= image
+                self.Z[self.row][i] = self.counts_per_sec
+
+
+                   
+            # Update the image after each row   
+            self.update_image()
+            
+            # Note how much time it takes for the row
+            self.time_row_elapsed = time.time() - self.time_row_start
+            
+            # Update the progress bar
+            progress = 100*(self.row+1)/len(self.ys)
+            self.progress_bar.setValue(progress)
+            # Update the label for the progress
+            nb_row_remaining = len(self.ys) - (self.row+1)
+            sec = self.time_row_elapsed*nb_row_remaining
+            self.label_progress.set_text('Time remaining: %.2f s'%sec)
+            
+            # Update the row for the next iteration
+            self.row +=1
+            # Allow the GUI to update. This is important to avoid freezing of the GUI inside loops
+            self.process_events()    
+            
     def scan_diagonal_sweep(self):
         """
         This scans by sweeping in diagonal. 
