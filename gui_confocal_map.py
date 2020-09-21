@@ -194,7 +194,7 @@ class GUIMap(egg.gui.Window):
                                            bounds=[None,None],
                                            tip='Factor by which we stretch the yaxis')  
         
-        self.list_scanning_mode = ['Sawtooth', 'Snake', 'Diagonal_sweep', 'Spiral']
+        self.list_scanning_mode = ['Sawtooth', 'Snake', 'Random', 'Diagonal_sweep', 'Spiral']
         self.treeDic_settings.add_parameter('Scanning_mode', 0, 
                                            type='list', 
                                            values=self.list_scanning_mode,
@@ -694,6 +694,8 @@ class GUIMap(egg.gui.Window):
             self.scan_spiral()   
         elif self.treeDic_settings['Scanning_mode'] == 'Diagonal_sweep':
             self.scan_diagonal_sweep()
+        elif self.treeDic_settings['Scanning_mode'] == 'Random':
+            self.scan_random_points()   
             
         # At this poin the scan is completed or stopped
         # Store the scan
@@ -835,35 +837,44 @@ class GUIMap(egg.gui.Window):
             # Allow the GUI to update. This is important to avoid freezing of the GUI inside loops
             self.process_events()    
 
-    def scan_random_point_sweep(self):
+    def scan_random_points(self):
         """
         This scans random points on the map. 
         """
-        _debug('GUIMap: scan_row_snake')
-             
-        # Start the scan
-        self.row = 0
-        while self.is_scanning and self.row<len(self.ys):
-            # Note the time at which the row starts
-            self.time_row_start = time.time()
-            _debug('Sssssssnake Row ', self.row)
+        _debug('GUIMap: scan_random_points')
         
-            # Get the voltrage in Y
-            Vy = self.ys[self.row]
+        self.Ntotal = self.Nx*self.Ny # Total number of point to scan
+        # create a list for labelling ALL the points
+        self.list_pts = range(self.Ntotal) # This 
+        
+        # Scan until all the points got scanned
+        self.iteration = 0
+        while self.is_scanning and len(self.list_pts)>0:
             
-            # Note the order of the index to scan depending on which row we 
-            # have for doing the snake scan.
-            if self.row%2 == 0:
-                i_s = range(len( self.xs ))
-            else:
-                i_s  = np.flip(range(len( self.xs )))
+            # Note the time at which a batch starts
+            self.time_row_start = time.time()
+            self.iteration +=1 
+            _debug('GUIMap: scan_random_points', self.iteration)
             
-            # Scan this set of index
-            for i in i_s:
+            # To speed up, do batches before updating
+            for i in range(self.Nx):
+                # Pick a random number
+                self.pt_choosen = np.random.choice(self.list_pts)
+                # Extract the corresponding row and column
+                self.row    = int(self.pt_choosen/self.Nx) 
+                self.column = int(self.pt_choosen - self.Nx*self.row)
+                # Delete this number from the list for the next pickup
+                self.index_to_delete = np.where(self.list_pts==self.pt_choosen)[0][0]
+                self.list_pts = np.delete(self.list_pts, self.index_to_delete)
+                # for debugging
+                print('self.index_to_delete = ',self.index_to_delete)
+                print('len(self.list_pts) = ',len(self.list_pts))
                 
+                # Get the voltrage in Y
+                Vy = self.ys[self.row]            
                 # Get the voltage in x
-                Vx = self.xs[i]
-                
+                Vx = self.xs[self.column]        
+
                 # Update the voltage of the AOs
                 self.list_AOs = [self.AOx, self.AOy, self.AOz]
                 self.list_Vs = [Vx, Vy, self.Vz]
@@ -876,11 +887,10 @@ class GUIMap(egg.gui.Window):
                 self.counts_per_sec = 1e3*self.counts/self.count_time_ms
                 
                 # Since zero is boring, let's add something
-    #                image = self.counts + np.random.poisson( np.abs(1000*np.cos(Vx*Vy*0.5)) )
-    #                self.Z[self.row][i]= image
-                self.Z[self.row][i] = self.counts_per_sec
-
-
+                image =  100+np.random.poisson( np.abs(10000*np.cos(Vx*Vy*0.5)) )
+                self.Z[self.row][self.column]= image
+#                self.Z[self.row][self.column] = self.counts_per_sec     
+                
                    
             # Update the image after each row   
             self.update_image()
@@ -889,17 +899,16 @@ class GUIMap(egg.gui.Window):
             self.time_row_elapsed = time.time() - self.time_row_start
             
             # Update the progress bar
-            progress = 100*(self.row+1)/len(self.ys)
+            progress = 100*(self.iteration)/self.Ny
             self.progress_bar.setValue(progress)
             # Update the label for the progress
-            nb_row_remaining = len(self.ys) - (self.row+1)
-            sec = self.time_row_elapsed*nb_row_remaining
+            nb_iter_remaining = self.Ny - self.iteration # Number of iteration remaining
+            sec = self.time_row_elapsed*nb_iter_remaining
             self.label_progress.set_text('Time remaining: %.2f s'%sec)
             
-            # Update the row for the next iteration
-            self.row +=1
             # Allow the GUI to update. This is important to avoid freezing of the GUI inside loops
             self.process_events()    
+
             
     def scan_diagonal_sweep(self):
         """
@@ -952,8 +961,9 @@ class GUIMap(egg.gui.Window):
                 
                 # Since zero is boring, let's add something
 #                image = self.counts + np.random.poisson( np.abs(1000*np.cos(Vx*Vy*0.5)) )
-#                self.Z[j][i]= image
+#                self.Z[j][i]= 100+np.random.poisson( np.abs(10000*np.cos(Vx*Vy*0.5)) )
                 self.Z[j][i] = self.counts_per_sec         
+                
                 
                     
             # Update the image after each row   
