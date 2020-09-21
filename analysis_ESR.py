@@ -43,7 +43,11 @@ for d in ds:
     nb_iter = d.headers['iteration']
     count_rate  = total_counts*1e6/(nb_iter*rep*dt) 
     ecount_rate = etotal_counts*1e6/(nb_iter*rep*dt) 
-    txt = d.path.split('/')[-1] + '\nPower %.2f dBm'%d.headers['Power']
+    
+    # Estimate the contrast
+    c = 100*(np.max(count_rate) - np.min(count_rate))/np.max(count_rate)
+    txt = (d.path.split('/')[-1] + '\nPower %.2f dBm'%d.headers['Power']+
+           '\n(Max-Min)/Max %.2f percent'%c)
     plt.errorbar(fs,count_rate*1e-3,yerr=ecount_rate*1e-3,
                  label =txt)
     

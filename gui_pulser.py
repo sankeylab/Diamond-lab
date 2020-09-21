@@ -760,8 +760,8 @@ class GuiMainPulseSequence(egg.gui.Window):
             self.process_events()    
             # Update the condition for the while loop
             condition_loop = (self.iter<self.N_loopFPGA) and self.is_running    
-            _debug('GuiMainPulseSequence: run_loops: self.iter, self.N_loopFPGA, self.is_running',
-                   self.iter,self.N_loopFPGA, self.is_running)
+            _debug('GuiMainPulseSequence: run_loops: self.iter, self.N_loopFPGA, self.is_running, condition_loop',
+                   self.iter,self.N_loopFPGA, self.is_running, condition_loop)
             
             # Call the function for optimizing if the condition is met
             # Note that the condition is not meet if N=0. Clever. 
