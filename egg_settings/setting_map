@@ -8,19 +8,19 @@ AO_y	1
 AO_y|expanded	True
 AO_z	2
 AO_z|expanded	True
-X_min	-10.0
+X_min	8.9
 X_min|expanded	True
-X_max	10.0
+X_max	9.9
 X_max|expanded	True
 Nb_point_X	100
 Nb_point_X|expanded	True
-Y_min	-10.0
+Y_min	0.0
 Y_min|expanded	True
-Y_max	10.0
+Y_max	1.0
 Y_max|expanded	True
 Nb_point_Y	100
 Nb_point_Y|expanded	True
-Slice_shown	2
+Slice_shown	4
 Slice_shown|expanded	True
 Colormap	'Awesome'
 Colormap|expanded	True
@@ -28,6 +28,6 @@ Set_aspect	True
 Set_aspect|expanded	True
 yfactor_aspect_ratio	1.0
 yfactor_aspect_ratio|expanded	True
-Scanning_mode	'Random'
+Scanning_mode	'Snake'
 Scanning_mode|expanded	True
 

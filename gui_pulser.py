@@ -1716,6 +1716,13 @@ class GUIRabi(egg.gui.Window):
         _debug('GUIRabi: databoxplot_update')
         # CLear the plot
         self.databoxplot.clear() 
+
+        # Add important information in the header
+        self.databoxplot.insert_header('repetition', self.rep)
+        self.databoxplot.insert_header('iteration' , self.iteration)
+        for key in self.treeDic_settings.get_keys():
+            # Add each element of the dictionnary three
+            self.databoxplot.insert_header(key , self.treeDic_settings[key])
                 
         self.databoxplot['Time_(us)'] = self.dt_s
         # Loop over each readout 
@@ -1741,6 +1748,10 @@ class GUIRabi(egg.gui.Window):
             Number of repetition of the sequence into the fpga instruction
             """
         _debug('GUIRabi: after_one_loop')
+        
+        # Note that for saving 
+        self.rep = rep
+        self.iteration = iteration
         
         # Get the counts per readout per block
         self.count_processor = _fc.ProcessFPGACounts(counts)

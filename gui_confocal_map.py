@@ -488,9 +488,6 @@ class GUIMap(egg.gui.Window):
         self.initialize_image()
         self.update_image()
         
-#        # Store the image
-#        self.store_scan()
-        
         
     def ROI_subregion_change(self):
         """
@@ -888,10 +885,11 @@ class GUIMap(egg.gui.Window):
                 self.counts =  self.fpga.get_counts()[0]
                 self.counts_per_sec = 1e3*self.counts/self.count_time_ms
                 
-                # Since zero is boring, let's add something
-                image =  100+np.random.poisson( np.abs(10000*np.cos(Vx*Vy*0.5)) )
-                self.Z[self.row][self.column]= image
-#                self.Z[self.row][self.column] = self.counts_per_sec     
+#                # Since zero is boring, let's add something
+#                image =  100+np.random.poisson( np.abs(10000*np.cos(Vx*Vy*0.5)) )
+#                self.Z[self.row][self.column]= image
+                
+                self.Z[self.row][self.column] = self.counts_per_sec     
                 
                    
             # Update the image after each row   
