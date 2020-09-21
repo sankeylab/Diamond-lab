@@ -20,7 +20,7 @@ Y_max	10.0
 Y_max|expanded	True
 Nb_point_Y	100
 Nb_point_Y|expanded	True
-Slice_shown	1
+Slice_shown	2
 Slice_shown|expanded	True
 Colormap	'Awesome'
 Colormap|expanded	True

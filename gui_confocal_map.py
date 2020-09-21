@@ -177,7 +177,7 @@ class GUIMap(egg.gui.Window):
                                            tip='Number of point to scan in the y direction.')   
         
         self.treeDic_settings.add_parameter('Slice_shown', 0, 
-                                           type='int', step=1, 
+                                           type='int', 
                                            suffix=' /%d'%(self.nb_max_slice-1),
                                            bounds=[0, self.nb_max_slice-1],
                                            tip='Which scan to shown')  
@@ -295,9 +295,9 @@ class GUIMap(egg.gui.Window):
         
         n = self.treeDic_settings['Slice_shown']
         
-        # Ajdust the value if it exceed the sotred data
+        # Ajdust the value if it exceed the stored data
         if n>=self.nb_of_slice:
-            self.treeDic_settings['Slice_shown'] = self.nb_of_slice
+            self.treeDic_settings['Slice_shown'] = self.nb_of_slice-1
             n = self.treeDic_settings['Slice_shown']
         # Get the slice
         self.databox_scan = self.list_databox_scans[n]
@@ -457,16 +457,18 @@ class GUIMap(egg.gui.Window):
         
         # Get the databob
         ds = sm.data.load_multiple(text='Load one or more scans')
-     
-        # Take the last element to show. 
-        self.databox_scan = ds[-1]
- 
-        # If we selected more than one databox, set them as the new list
+        
         if len(ds)>1:
+            # If we selected more than one databox, set them as the new list
             self.list_databox_scans = ds
         else:
-            # Store the image
-            self.store_scan()
+            # If we selected only one databox, overid the last scan
+            self.list_databox_scans[-1] = ds[0]
+#            # Store the image
+#            self.store_scan()
+
+        # Take the last element to show. 
+        self.databox_scan = self.list_databox_scans[-1]
             
         # Extract the data
         self.label_slice_date = self.databox_scan.h('date')
@@ -486,8 +488,8 @@ class GUIMap(egg.gui.Window):
         self.initialize_image()
         self.update_image()
         
-        # Store the image
-        self.store_scan()
+#        # Store the image
+#        self.store_scan()
         
         
     def ROI_subregion_change(self):
@@ -635,7 +637,7 @@ class GUIMap(egg.gui.Window):
             self.databox_scan['Col%d'%i] = col              
 
 
-        if self.nb_of_slice >= self.nb_max_slice:
+        if self.nb_of_slice > self.nb_max_slice:
             # Pop the oldest stored slice if we exceed the nb of slices
             _debug('GUIMap: store_scan: poping oldest scan.')
             self.list_databox_scans.pop(0)
@@ -866,9 +868,9 @@ class GUIMap(egg.gui.Window):
                 # Delete this number from the list for the next pickup
                 self.index_to_delete = np.where(self.list_pts==self.pt_choosen)[0][0]
                 self.list_pts = np.delete(self.list_pts, self.index_to_delete)
-                # for debugging
-                print('self.index_to_delete = ',self.index_to_delete)
-                print('len(self.list_pts) = ',len(self.list_pts))
+#                # for debugging
+#                print('self.index_to_delete = ',self.index_to_delete)
+#                print('len(self.list_pts) = ',len(self.list_pts))
                 
                 # Get the voltrage in Y
                 Vy = self.ys[self.row]            
