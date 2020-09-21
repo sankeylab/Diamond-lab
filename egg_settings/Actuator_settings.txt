@@ -2,8 +2,8 @@
 /Actuator/VISA/Device	'COM3'
 /Actuator/VISA/Device|expanded	True
 /Actuator/Motion|expanded	True
-/Actuator/Motion/Target_position	7.0
+/Actuator/Motion/Target_position	15.0
 /Actuator/Motion/Target_position|expanded	True
-/Actuator/Motion/Speed	3.8785579920388415e-07
+/Actuator/Motion/Speed	1.0
 /Actuator/Motion/Speed|expanded	True
 
