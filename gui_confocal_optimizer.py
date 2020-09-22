@@ -87,21 +87,7 @@ class GUIOptimizer(egg.gui.Window):
         self.treeDic_settings.add_parameter('Usual/Range_Vz', 0.1, 
                                            type='float', step=0.1, 
                                            bounds=[0,None], suffix=' V',
-                                           tip='Range on which to optimize in Vz direction')   
-        # THe next three are for the offsets voltages if we want to optimize elsewhere. 
-        #TODO Make clear what these offsets mean
-        self.treeDic_settings.add_parameter('Usual/Offset_Vx', 0, 
-                                           type='float', step=0.1, 
-                                           bounds=[-20,20], suffix=' V',
-                                           tip='R_opt - R_probe')
-        self.treeDic_settings.add_parameter('Usual/Offset_Vy', 0, 
-                                           type='float', step=0.1, 
-                                           bounds=[-20,20], suffix=' V',
-                                           tip='R_opt - R_probe')
-        self.treeDic_settings.add_parameter('Usual/Offset_Vz', 0, 
-                                           type='float', step=0.1, 
-                                           bounds=[-20,20], suffix=' V',
-                                           tip='R_opt - R_probe')
+                                           tip='Range on which to optimize in Vz direction')  
         # Other useful parameters
         self.treeDic_settings.add_parameter('Usual/Count_time', 50, 
                                            type='float', step=0.1, 
@@ -109,15 +95,62 @@ class GUIOptimizer(egg.gui.Window):
         self.treeDic_settings.add_parameter('Usual/Scan_points', 25, 
                                            type='int', step=1, 
                                            bounds=[3, None])
+        # THe next three are for the offsets voltages if we want to optimize
+        # elsewehre than the position probed. 
+        self.treeDic_settings.add_parameter('Usual/Offset_Vx', 0, 
+                                           type='float', step=0.1, 
+                                           bounds=[-20,20], suffix=' V',
+                                           tip='X_opt - X_probe')
+        self.treeDic_settings.add_parameter('Usual/Offset_Vy', 0, 
+                                           type='float', step=0.1, 
+                                           bounds=[-20,20], suffix=' V',
+                                           tip='Y_opt - Y_probe')
+        self.treeDic_settings.add_parameter('Usual/Offset_Vz', 0, 
+                                           type='float', step=0.1, 
+                                           bounds=[-20,20], suffix=' V',
+                                           tip='Z_opt - Z_probe')
+        
         # The next parameters are used only for automatic optimization during
         # Pulse sequences or something else. 
         self.treeDic_settings.add_parameter('Automatic/Threshold_fraction', 0.95, 
                                            type='float', step=0.1, 
                                            bounds=[0,None], 
                                            tip='Like in Labview')    
+
+        # Add a table for showing the selected R_probed and R_optimize
+        self.table_Rs  = egg.gui.Table()
+        self.place_object(self.table_Rs, row=2, column=0, column_span=2) 
+        # Put some values
+        self.table_Rs.set_value(column=1, row=0, value='Vx')
+        self.table_Rs.set_value(column=2, row=0, value='Vy')
+        self.table_Rs.set_value(column=3, row=0, value='Vz')
+        self.table_Rs.set_value(column=0, row=1, value='R_probe')
+        self.table_Rs.set_value(column=0, row=2, value='R_opt')      
+        self.table_Rs.set_value(column=1, row=1, value=0)
+        self.table_Rs.set_value(column=2, row=1, value=0)
+        self.table_Rs.set_value(column=3, row=1, value=0)
+        self.table_Rs.set_value(column=1, row=2, value=0)
+        self.table_Rs.set_value(column=2, row=2, value=0)
+        self.table_Rs.set_value(column=3, row=2, value=0)        
+
+        # Place a button for setting r_probe
+        self.button_set_r_probe = self.place_object(
+                egg.gui.Button('Set R_probe'), row=3, column=0)       
+        self.connect(self.button_set_r_probe.signal_clicked, self.button_set_r_probe_clicked)  
+        # Place a button for setting r_optimize
+        self.button_set_r_opt = self.place_object(
+                egg.gui.Button('Set R_opt'), row=4, column=0)       
+        self.connect(self.button_set_r_opt.signal_clicked, self.button_set_r_opt_clicked) 
+        # Place a button for setting the offset
+        self.button_set_r_offset = self.place_object(
+                egg.gui.Button('Set R_offset'), row=5, column=0)       
+        self.connect(self.button_set_r_offset.signal_clicked, self.button_set_r_offset_clicked)         
         
         # Tabs !
-        self.tabs1 = self.place_object(egg.gui.TabArea(autosettings_path='optimizer_tabs1'))
+        self.tabs1 = self.place_object(
+                egg.gui.TabArea(autosettings_path='optimizer_tabs1'),
+                row_span=6)
+        
         
         # A tab for the fits
         self.tab_fits = self.tabs1.add_tab('Fits')
@@ -202,6 +235,114 @@ class GUIOptimizer(egg.gui.Window):
             # Send a event saying "Holla, optimization is done !"
             self.event_optimize_ends()
 
+    def button_set_r_probe_clicked(self):
+        """
+        Note the actuall probed position
+        """
+        _debug('GUIOptimizer: button_set_r_probe_clicked')
+
+        # Steal the AOs information of x,y,z from the map
+        self.steal_AO_info() # This make sure that we have the good AO
+        # Get the voltages
+        Vx = self.fpga.get_AO_voltage(self.AOx)
+        Vy = self.fpga.get_AO_voltage(self.AOy)
+        Vz = self.fpga.get_AO_voltage(self.AOz)
+        # Update the table
+        self.table_Rs.set_value(column=1, row=1, value=Vx)
+        self.table_Rs.set_value(column=2, row=1, value=Vy)
+        self.table_Rs.set_value(column=3, row=1, value=Vz)        
+
+    def button_set_r_opt_clicked(self):
+        """
+        Note the osition to optimize
+        """
+        _debug('GUIOptimizer: button_set_r_opt_clicked')
+
+        # Steal the AOs information of x,y,z from the map
+        self.steal_AO_info() # This make sure that we have the good AO
+        # Get the voltages
+        Vx = self.fpga.get_AO_voltage(self.AOx)
+        Vy = self.fpga.get_AO_voltage(self.AOy)
+        Vz = self.fpga.get_AO_voltage(self.AOz)
+        # Update the table
+        self.table_Rs.set_value(column=1, row=2, value=Vx)
+        self.table_Rs.set_value(column=2, row=2, value=Vy)
+        self.table_Rs.set_value(column=3, row=2, value=Vz)   
+        
+    def button_set_r_offset_clicked(self):
+        """
+        Set the relative position for optimizing. 
+        """
+        _debug('GUIOptimizer: button_set_r_offset_clicked')  
+        
+        # Take the position to optimize
+        Vopt_x = float(self.table_Rs.get_value(column=1, row=2))
+        Vopt_y = float(self.table_Rs.get_value(column=2, row=2))
+        Vopt_z = float(self.table_Rs.get_value(column=3, row=2))
+        # Take the position to probe
+        Vprobe_x = float(self.table_Rs.get_value(column=1, row=1))
+        Vprobe_y = float(self.table_Rs.get_value(column=2, row=1))
+        Vprobe_z = float(self.table_Rs.get_value(column=3, row=1))
+        # Get the offset voltages 
+        Voffset_x = Vopt_x - Vprobe_x
+        Voffset_y = Vopt_y - Vprobe_y
+        Voffset_z = Vopt_z - Vprobe_z
+        # Save this in the tree dictionnary
+        self.treeDic_settings['Usual/Offset_Vx'] = Voffset_x
+        self.treeDic_settings['Usual/Offset_Vy'] = Voffset_y
+        self.treeDic_settings['Usual/Offset_Vz'] = Voffset_z
+        
+    def offset_put_them(self):
+        """
+        Shift the position of the piezo by the offset
+        """        
+        _debug('GUIOptimizer: offset_put_them')
+        
+        # Note the value of the offsets
+        self.Voffset_x = self.treeDic_settings['Usual/Offset_Vx']
+        self.Voffset_y = self.treeDic_settings['Usual/Offset_Vy']
+        self.Voffset_z = self.treeDic_settings['Usual/Offset_Vz']  
+        # Note the new position
+        self.vx_new = self.fpga.get_AO_voltage(self.AOx) + self.Voffset_x
+        self.vy_new = self.fpga.get_AO_voltage(self.AOy) + self.Voffset_y
+        self.vz_new = self.fpga.get_AO_voltage(self.AOz) + self.Voffset_z
+        _debug('GUIOptimizer: offset_put_them: ',
+               self.vx_new, self.vy_new, self.vz_new)
+        
+        # Set the fpga in this new position 
+        self.fpga.prepare_AOs([int(self.AOx), int(self.AOy), int(self.AOz)], 
+                               [self.vx_new, self.vy_new, self.vz_new]) 
+        # Run the FPGA for updating its settings
+        # It gonna run also the pre-existing pulse sequence. Hopefully it's 
+        # gonna be the counter. 
+        self.fpga.lets_go_FPGA()
+        
+        # Call the event to say "hey, stuff changed on the fpga"
+        self.event_fpga_change()          
+
+    def offset_remove_them(self):
+        """
+        Shift the position of the piezo to remove the offset
+        """        
+        _debug('GUIOptimizer: offset_remove_them')
+        
+        # Note the new position
+        self.vx_new = self.fpga.get_AO_voltage(self.AOx) - self.Voffset_x
+        self.vy_new = self.fpga.get_AO_voltage(self.AOy) - self.Voffset_y
+        self.vz_new = self.fpga.get_AO_voltage(self.AOz) - self.Voffset_z
+        _debug('GUIOptimizer: offset_remove_them: ',
+               self.vx_new, self.vy_new, self.vz_new)
+        
+        # Set the fpga in this new position 
+        self.fpga.prepare_AOs([int(self.AOx), int(self.AOy), int(self.AOz)], 
+                               [self.vx_new, self.vy_new, self.vz_new]) 
+        # Run the FPGA for updating its settings
+        # It gonna run also the pre-existing pulse sequence. Hopefully it's 
+        # gonna be the counter. 
+        self.fpga.lets_go_FPGA()
+        
+        # Call the event to say "hey, stuff changed on the fpga"
+        self.event_fpga_change()            
             
     def parabola(self, x, x0, dx, y0):
         """
@@ -292,7 +433,22 @@ class GUIOptimizer(egg.gui.Window):
             
         _debug('GUIOptimizer: find_max: v_best = ', self.v_best)
  
-        
+    def steal_AO_info(self):
+        """
+        Steal the AOs information of x,y,z from the setting of the map
+        """
+        _debug('GUIOptimizer: steal_AO_info') 
+        self.treeDict_map = egg.gui.TreeDictionary(autosettings_path='setting_map')
+        self.treeDict_map.add_parameter('AO_x')
+        self.treeDict_map.add_parameter('AO_y')
+        self.treeDict_map.add_parameter('AO_z')
+        self.treeDict_map.add_parameter('Wait_after_AOs')
+        self.AOx = self.treeDict_map['AO_x']
+        self.AOy = self.treeDict_map['AO_y']
+        self.AOz = self.treeDict_map['AO_z']
+        self.wait_after_AOs_us = int(self.treeDict_map['Wait_after_AOs'])
+        _debug(self.AOx, self.AOy, self.AOz, self.wait_after_AOs_us)
+               
         
     def run_optimizing(self):
         """
@@ -301,25 +457,18 @@ class GUIOptimizer(egg.gui.Window):
         _debug('GUIOptimizer: run_optimizing') 
         
         # Steal the AOs information of x,y,z from the map
-        self.treeDict_map = egg.gui.TreeDictionary(autosettings_path='setting_map')
-        self.treeDict_map.add_parameter('AO_x')
-        self.treeDict_map.add_parameter('AO_y')
-        self.treeDict_map.add_parameter('AO_z')
-        self.treeDict_map.add_parameter('Wait_after_AOs')
-        self.AOx = self.treeDict_map['AO x']
-        self.AOy = self.treeDict_map['AO y']
-        self.AOz = self.treeDict_map['AO z']
-        self.wait_after_AOs_us = int(self.treeDict_map['Wait_after_AOs'])
-        print(self.AOx, self.AOy, self.AOz, self.wait_after_AOs_us)
+        self.steal_AO_info()
+        
+        # Put the offsets
+        self.offset_put_them()
 
-#TODO comment/uncomment if needed
         # Prepare the pulse sequence for getting the counts
         self.prepare_acquisition_pulse()
         
         # Optimize the X direction
         self.AO = self.AOx
         # The center voltage will be the actual voltage
-        self.V0 = self.fpga.get_AO_voltage(self.AO)
+        self.V0 = self.fpga.get_AO_voltage(self.AO) 
         self.Vmin = self.V0 - self.treeDic_settings['Usual/Range_Vx']/2
         self.Vmax = self.V0 + self.treeDic_settings['Usual/Range_Vx']/2
         # Trigger the scan
@@ -368,6 +517,9 @@ class GUIOptimizer(egg.gui.Window):
         if self.is_optimizing:
             # Will stop optimizing and uptage the button
             self.button_optimize_clicked()
+
+        # Important: Remove the offsets
+        self.offset_remove_them()
         
     def update_plot_fit(self, plot):
         """
