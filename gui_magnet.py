@@ -563,7 +563,8 @@ class GUIMagnetSweepLines(egg.gui.Window):
         # Load the setting
         d_settings     = _s.data.load(text='Load the setting fpor comparison')
         # Pop up a GUI
-        plot_magSweepLinesResult(d_scanned_data, d_settings)
+        plot_magSweepLinesResult(d_scanned_data, d_settings,
+                                 title = d_scanned_data.path)
 
     def button_save_sweep_clicked(self):
         """
