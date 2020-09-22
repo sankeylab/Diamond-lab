@@ -6,7 +6,7 @@ Created on Fri Aug 21 10:41:45 2020
 """
 
 from api_actuator import ApiActuator
-from prepare_mag_sweep_lines import plot_magSweepLinesSettings, plot_magSweepLinesResult
+from analysis_mag_sweep_lines import plot_magSweepLinesSettings, plot_magSweepLinesResult
 import spinmob     as _s
 from spinmob import egg
 import time
