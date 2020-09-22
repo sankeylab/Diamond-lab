@@ -479,7 +479,16 @@ class GUIMap(egg.gui.Window):
         self.Vymax = self.databox_scan.h('Vy_max')
         self.Ny    = self.databox_scan.h('Ny')
         
-        self.Z = np.zeros([self.Nx, self.Ny])
+        # Set the tree dictionnary, in case that we would like to rescan the 
+        # Same parameter
+        self.treeDic_settings['X_min'] = self.Vxmin
+        self.treeDic_settings['Y_min'] = self.Vymin
+        self.treeDic_settings['X_max'] = self.Vxmax
+        self.treeDic_settings['Y_max'] = self.Vymax
+        self.treeDic_settings['Nb_point_X'] = self.Nx 
+        self.treeDic_settings['Nb_point_Y'] = self.Ny
+        
+        self.Z = np.zeros([self.Ny, self.Nx])
         # Add each column 
         for i in range(self.Ny):
             self.Z[i] = self.databox_scan['Col%d'%i]      
