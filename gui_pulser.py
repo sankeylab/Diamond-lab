@@ -770,7 +770,7 @@ class GuiMainPulseSequence(egg.gui.Window):
             # Note that the condition is not meet if N=0. Clever. 
             if self.Nloop_before_optimize>0:
                 if self.iter%self.Nloop_before_optimize == self.Nloop_before_optimize-1:
-                    print('Cotton Wouate')
+                    _debug('GuiMainPulseSequence: run_loops: event_optimize sent!')
                     self.event_optimize()
                     
             _debug('GuiMainPulseSequence: run_loops: END self.iter, self.N_loopFPGA, self.is_running, condition_loop',
