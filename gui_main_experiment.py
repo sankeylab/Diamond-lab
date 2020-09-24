@@ -169,11 +169,15 @@ class GUIMainExperiment(egg.gui.Window):
         """
         _debug('GUIMainExperiment: optimize_pulse')
         # The if might be not necessary, or it is overkill.
-        if not(self.gui_confocal.gui_optimizer.is_optimizing):
-            
-            # Only do that is it is running. 
-            #TODO CLean all that. Make this more clear and clean. 
-            if self.gui_pulser.is_running:
+        # It is maint to prevent a double call if it is already optimizing. 
+
+        # Only do that is it is running. 
+        #TODO CLean all that. Make this more clear and clean. 
+        # Ultimatelly deal with that within the specific GUIs themselve. 
+        if self.gui_pulser.is_running:
+            _debug('GUIMainExperiment :optimize_pulse: was yes pulse before: ')
+            if not(self.gui_confocal.gui_optimizer.is_optimizing):
+                _debug('GUIMainExperiment :optimize_pulse: lets go')
                 self.pulse_was_running_before_optimizing = True
                 # The if should prevent multiple click.
                 i = self.gui_pulser.iter
@@ -183,10 +187,11 @@ class GUIMainExperiment(egg.gui.Window):
                 # First pause the pulse
                 self.gui_pulser.button_start.click() # This should pause. 
                 # Then optimize
-                self.gui_confocal.gui_optimizer.button_optimize_clicked()    
+                self.gui_confocal.gui_optimizer.button_optimize.click() 
                 
-            else:
-                self.pulse_was_running_before_optimizing = False
+        else:
+            _debug('GUIMainExperiment :optimize_pulse: was not pulse before: ')
+            self.pulse_was_running_before_optimizing = False
 
     def after_optimization(self):
         """
