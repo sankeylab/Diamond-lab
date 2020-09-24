@@ -69,10 +69,14 @@ class GUIMainExperiment(egg.gui.Window):
         # Fill the GUI
         self.initialize_GUI()  
         
-        # Overrid some methods
+        
+        #TODO Important Better handlge the optimization during either the pulse
+        # Sequence or during the magnet scan. Very important, because we gonna 
+        # have other protocols which will want to use the optimizer !
+        # Maybe the information should be encoded in the specific GUIs themself !
         # Overrid some methods
         self.gui_pulser.event_optimize = self.optimize_pulse        
-#        self.gui_confocal.gui_optimizer.event_optimize_starts = self.before_optimization
+        self.gui_confocal.gui_optimizer.event_optimize_starts = self.optimize_pulse
         self.gui_confocal.gui_optimizer.event_optimize_ends   = self.after_optimization
 
     def initialize_GUI(self):
@@ -161,9 +165,9 @@ class GUIMainExperiment(egg.gui.Window):
 
     def optimize_pulse(self):
         """
-        Optimize between loops of pulse sequences
+        Optimize between loops of pulse sequences or somehting else. 
         """
-        
+        _debug('GUIMainExperiment: optimize_pulse')
         # The if might be not necessary, or it is overkill.
         if not(self.gui_confocal.gui_optimizer.is_optimizing):
             
@@ -195,11 +199,13 @@ class GUIMainExperiment(egg.gui.Window):
         if not(self.gui_confocal.gui_optimizer.is_optimizing): 
             
             if self.pulse_was_running_before_optimizing:
+                _debug('GUIMainExperiment: after_optimization: pulse_was_running_before_optimizing')
                 # Reconvert the sequence, this is done after the pulse satrt button is clicked                
                 # Re-click on for continuing the pulse sequence. 
                 self.gui_pulser.button_start.click() # This continue the pulse  
                 
             if self.magnet_scan_line_was_running_before_optimizing:
+                _debug('GUIMainExperiment: after_optimization: magnet_scan_line_was_running_before_optimizing')
                 # Need to reconvert the pulse sequence in the FPGA for the magnetic scan
                 self.magnet_initiate_line_sweep() # Everything is done in this method
                 

@@ -740,6 +740,9 @@ class GuiMainPulseSequence(egg.gui.Window):
 
         condition_loop = True
         while condition_loop:
+            _debug('GuiMainPulseSequence: run_loops: BEFORE self.iter, self.N_loopFPGA, self.is_running, condition_loop',
+                   self.iter,self.N_loopFPGA, self.is_running, condition_loop)
+            
             self.iter += 1
             # Update the label for the number of iteration
             self.iteration_label.set_text('Iteration %d'%self.iter)
@@ -760,7 +763,7 @@ class GuiMainPulseSequence(egg.gui.Window):
             self.process_events()    
             # Update the condition for the while loop
             condition_loop = (self.iter<self.N_loopFPGA) and self.is_running    
-            _debug('GuiMainPulseSequence: run_loops: self.iter, self.N_loopFPGA, self.is_running, condition_loop',
+            _debug('GuiMainPulseSequence: run_loops: MIDDLE self.iter, self.N_loopFPGA, self.is_running, condition_loop',
                    self.iter,self.N_loopFPGA, self.is_running, condition_loop)
             
             # Call the function for optimizing if the condition is met
@@ -769,6 +772,9 @@ class GuiMainPulseSequence(egg.gui.Window):
                 if self.iter%self.Nloop_before_optimize == self.Nloop_before_optimize-1:
                     print('Cotton Wouate')
                     self.event_optimize()
+                    
+            _debug('GuiMainPulseSequence: run_loops: END self.iter, self.N_loopFPGA, self.is_running, condition_loop',
+                   self.iter,self.N_loopFPGA, self.is_running, condition_loop)
         
         # Loop ended.         
         # Update the buttons
