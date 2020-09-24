@@ -2385,6 +2385,14 @@ class GUICalibration(egg.gui.Window):
         _debug('GUICalibration: databoxplot_update')
         # CLear the plot
         self.databoxplot.clear() 
+
+
+        # Add important information in the header
+        self.databoxplot.insert_header('repetition', self.rep)
+        self.databoxplot.insert_header('iteration' , self.iteration)
+        for key in self.treeDic_settings.get_keys():
+            # Add each element of the dictionnary three
+            self.databoxplot.insert_header(key , self.treeDic_settings[key])
                 
         tmin = self.t_on_read
         tmax = tmin+len(self.counts_total)/120  # Maximum time is the lenght times the tick duration
@@ -2413,6 +2421,10 @@ class GUICalibration(egg.gui.Window):
             Number of repetition of the sequence into the fpga instruction
             """
         _debug('GUICalibration after_one_loop')
+
+        # Note that for saving 
+        self.rep = rep
+        self.iteration = iteration
         
         self.count_processor = _fc.ProcessFPGACounts(fpga_output)
         self.counts = self.count_processor.get_sum_count_per_repetition_CET_mode(rep)

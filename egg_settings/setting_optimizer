@@ -9,10 +9,13 @@ Usual/Count_time	50.0
 Usual/Count_time|expanded	True
 Usual/Scan_points	25
 Usual/Scan_points|expanded	True
-Usual/Offset_Vx	0.1
+Usual/Offset_Vx	1.0
 Usual/Offset_Vx|expanded	True
-Usual/Offset_Vy	-0.2
+Usual/Offset_Vy	1.0
 Usual/Offset_Vy|expanded	True
-Usual/Offset_Vz	-1.3
+Usual/Offset_Vz	1.0
 Usual/Offset_Vz|expanded	True
+Automatic|expanded	True
+Automatic/Threshold_fraction	0.95
+Automatic/Threshold_fraction|expanded	True
 
