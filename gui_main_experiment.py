@@ -63,7 +63,8 @@ class GUIMainExperiment(egg.gui.Window):
         self.fpga = fpga
         
         # Some attribute
-        self.pulse_was_running_before_optimizing = False
+#TODO remove this line if everything is cool.
+#        self.pulse_was_running_before_optimizing = False
         self.magnet_scan_line_was_running_before_optimizing = False
         
         # Fill the GUI
@@ -75,7 +76,8 @@ class GUIMainExperiment(egg.gui.Window):
         # have other protocols which will want to use the optimizer !
         # Maybe the information should be encoded in the specific GUIs themself !
         # Overrid some methods
-        self.gui_pulser.event_optimize = self.pulser_optimize        
+#TODO remove this line if everything is cool.
+#        self.gui_pulser.event_optimize = self.pulser_optimize        
         self.gui_confocal.gui_optimizer.event_optimize_ends   = self.after_optimization
         self.gui_magnet.gui_sweep_lines.event_one_line_is_swept = self.magnet_scan_line_optimize
         
@@ -87,7 +89,8 @@ class GUIMainExperiment(egg.gui.Window):
 
         # Prepare the GUI before to place them 
         self.gui_confocal   = gui_confocal_main.GUIMainConfocal(self.fpga)
-        self.gui_pulser     = gui_pulser.  GuiMainPulseSequence(self.fpga)
+        self.gui_pulser     = gui_pulser.  GuiMainPulseSequence(self.fpga, 
+                                                                self.gui_confocal.gui_optimizer)
         self.gui_saturation = gui_saturation.     GUISaturation(self.fpga)
         self.gui_magnet     = gui_magnet.GUIMagnet()
         #Connect the magnet event methods to the proper task.
@@ -163,37 +166,38 @@ class GUIMainExperiment(egg.gui.Window):
         self.label_checkbug.set_text('Last error: '+s)
         
 
-    def pulser_optimize(self):
-        """
-        Optimize between loops of pulse sequences or somehting else. 
-        """
-        _debug('GUIMainExperiment: pulser_optimize')
-        
-        #TODO CLean all that. Make this more clear and clean. 
-        # Ultimatelly deal with that within the specific GUIs themselve. 
-        
-#         # Only do that is it is running. 
-#        if self.gui_pulser.is_running:
-        
-        _debug('GUIMainExperiment :pulser_optimize: was yes pulse before: ')
-        self.pulse_was_running_before_optimizing = True
-            
-#            # Optimize only if the optimization is not running yet. 
-#            if not(self.gui_confocal.gui_optimizer.is_optimizing):
-            
-        _debug('GUIMainExperiment :pulser_optimize: lets go')
-        # Let's take some note for debugging
-        i = self.gui_pulser.iter
-        N_threshold = self.gui_pulser.Nloop_before_optimize
-        _debug('GUIMainExperiment :pulser_optimize:  i, N = %d, %d'%(i,N_threshold))
-        # First pause the pulse
-        self.gui_pulser.button_start.click() # This should pause. 
-        # Then optimize
-        self.gui_confocal.gui_optimizer.button_optimize.click() 
-                
-#        else:
-#            _debug('GUIMainExperiment :pulser_optimize: was not pulse before: ')
-#            self.pulse_was_running_before_optimizing = False
+#TODO Remove these comments if everything is working well.
+#    def pulser_optimize(self):
+#        """
+#        Optimize between loops of pulse sequences or somehting else. 
+#        """
+#        _debug('GUIMainExperiment: pulser_optimize')
+#        
+#        #TODO CLean all that. Make this more clear and clean. 
+#        # Ultimatelly deal with that within the specific GUIs themselve. 
+#        
+##         # Only do that is it is running. 
+##        if self.gui_pulser.is_running:
+#        
+#        _debug('GUIMainExperiment :pulser_optimize: was yes pulse before: ')
+#        self.pulse_was_running_before_optimizing = True
+#            
+##            # Optimize only if the optimization is not running yet. 
+##            if not(self.gui_confocal.gui_optimizer.is_optimizing):
+#            
+#        _debug('GUIMainExperiment :pulser_optimize: lets go')
+#        # Let's take some note for debugging
+#        i = self.gui_pulser.iter
+#        N_threshold = self.gui_pulser.Nloop_before_optimize
+#        _debug('GUIMainExperiment :pulser_optimize:  i, N = %d, %d'%(i,N_threshold))
+#        # First pause the pulse
+#        self.gui_pulser.button_start.click() # This should pause. 
+#        # Then optimize
+#        self.gui_confocal.gui_optimizer.button_optimize.click() 
+#                
+##        else:
+##            _debug('GUIMainExperiment :pulser_optimize: was not pulse before: ')
+##            self.pulse_was_running_before_optimizing = False
 
     def after_optimization(self):
         """
@@ -201,19 +205,22 @@ class GUIMainExperiment(egg.gui.Window):
         This will depend on what was running before the optimization. 
         """
         _debug('GUIMainExperiment: after_optimization')
-        
-        # The if condition might be not necessary, or it is overkill.
-        if not(self.gui_confocal.gui_optimizer.is_optimizing): 
-            
-            if self.pulse_was_running_before_optimizing:
-                _debug('GUIMainExperiment: after_optimization: pulse_was_running_before_optimizing')
-                # Reset this to false to avoid further confusion
-                self.pulse_was_running_before_optimizing = False
+      
+#TODO Remove these lines if everything is working fine
+# And also remove them for the magnet !
+#        # The if condition might be not necessary, or it is overkill.
+#        if not(self.gui_confocal.gui_optimizer.is_optimizing): 
+#            
+#            if self.pulse_was_running_before_optimizing:
+#                _debug('GUIMainExperiment: after_optimization: pulse_was_running_before_optimizing')
+#                # Reset this to false to avoid further confusion
+#                self.pulse_was_running_before_optimizing = False
+#                
+#                # Reconvert the sequence, this is done after the pulse satrt button is clicked                
+#                # Re-click on for continuing the pulse sequence. 
+#                self.gui_pulser.button_start.click() # This continue the pulse  
                 
-                # Reconvert the sequence, this is done after the pulse satrt button is clicked                
-                # Re-click on for continuing the pulse sequence. 
-                self.gui_pulser.button_start.click() # This continue the pulse  
-                
+        if not(self.gui_confocal.gui_optimizer.is_optimizing):     
             if self.magnet_scan_line_was_running_before_optimizing:
                 _debug('GUIMainExperiment: after_optimization: magnet_scan_line_was_running_before_optimizing')
                 # Reset this to false to avoid further confusion

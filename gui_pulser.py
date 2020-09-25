@@ -39,12 +39,20 @@ class GuiMainPulseSequence(egg.gui.Window):
     """
     Main GUI for running the FPGA with pulse sequence. 
     """
-    def __init__(self, fpga, name="Best pulser of the world", size=[1400,700]): 
+    def __init__(self, fpga,  optimizer=-1, 
+                 name="Best pulser of the world", size=[1400,700]): 
         """
         fpga:
             "FPGA_api" object from api_fpga.py. 
             This is the object shared amoung the GUIs for controlling the fpga. 
             The session of the fpga must already be open.    
+        optimizer:
+            GUIOptimizer class object. It is for dealing with the optimization
+            during the run of the pulse sequence. This object should be the 
+            optimizer used in the higher level gui. Taking it as an input is
+            just allowing us to use its functionnalities. 
+            If it is set to -1, there will be just nothing happening when it 
+            is time to optimize. 
         """    
         _debug('GuiMainPulseSequence:__init__')
         _debug('Don’t watch the clock; do what it does. Keep going. – Sam Levenson')
@@ -52,8 +60,9 @@ class GuiMainPulseSequence(egg.gui.Window):
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
         
-        
+        # Get the inputs
         self.fpga = fpga           
+        self.optimizer = optimizer
        
         # Some attribute
         self.is_running = False # Weither or not the pulse sequence is running    
@@ -728,7 +737,16 @@ class GuiMainPulseSequence(egg.gui.Window):
         # Note that it is resetted
         self.is_reseted = True
         
-
+    def prepare_THE_run_loop(self):
+        """
+        Prepare the fpga settings for the run loop
+        """
+        _debug('GuiMainPulseSequence: prepare_THE_run_loop')
+        # Send the data_array to the FPGA and prepare it
+        self.fpga.prepare_pulse(self.data_array) 
+        # Specify the counting mode again
+        self.fpga.set_counting_mode(self.CET_mode)        
+    
     def run_loops(self):
         """
         Perform the loops of the fpga has long as the conditions are met. 
@@ -736,11 +754,7 @@ class GuiMainPulseSequence(egg.gui.Window):
         _debug('GuiMainPulseSequence: run_loops')
         # Rewrite the data in the FPGA, in case they were changed by an other 
         # gui (example: the optimizer between loops)
-        # Send the data_array to the FPGA and prepare it
-        self.fpga.prepare_pulse(self.data_array) 
-        
-        # Specify the counting mode again
-        self.fpga.set_counting_mode(self.CET_mode)
+        self.prepare_THE_run_loop()
 
         condition_loop = True
         while condition_loop:
@@ -772,11 +786,14 @@ class GuiMainPulseSequence(egg.gui.Window):
             
             # Call the function for optimizing if the condition is met
             # Note that the condition is not meet if N=0. Clever. 
-            if self.Nloop_before_optimize>0:
+            if (self.Nloop_before_optimize>0) and not(self.optimizer==-1):
                 if self.iter%self.Nloop_before_optimize == self.Nloop_before_optimize-1:
                     _debug('GuiMainPulseSequence: run_loops: event_optimize sent!')
-                    self.event_optimize()
-                    
+                    self.optimizer.button_optimize.click()
+                    # The fpga settings change during optimization. 
+                    #We need to put them back.
+                    self.prepare_THE_run_loop()
+                            
             _debug('GuiMainPulseSequence: run_loops: END self.iter, self.N_loopFPGA, self.is_running, condition_loop',
                    self.iter,self.N_loopFPGA, self.is_running, condition_loop)
         
@@ -784,8 +801,8 @@ class GuiMainPulseSequence(egg.gui.Window):
         # Update the buttons
         if self.is_running:
             # Click on stop if it is still running
-            self.button_start_clicked()            
-        
+            self.button_start_clicked()   
+
 
     def after_one_loop(self, counts, iteration, rep):
         """
@@ -815,13 +832,14 @@ class GuiMainPulseSequence(egg.gui.Window):
         # Show the GUI
         GUIFPGAInstruction(self.data_array,self.rep, self.length_data_block_s,
                            list_DIO_to_show=range(8)) # Only show the 8 first DIO
-        
-    def event_optimize(self):
-        """
-        Dummy function that is meant to be overrid. 
-        It gets call whenenver we want to re-optimize the x-y-z positions. 
-        """
-        return
+
+# TODO Remove if everything is okay
+#    def event_optimize(self):
+#        """
+#        Dummy function that is meant to be overrid. 
+#        It gets call whenenver we want to re-optimize the x-y-z positions. 
+#        """
+#        return
         
 
 
@@ -4328,7 +4346,10 @@ if __name__ == '__main__':
     
     fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
     fpga.open_session()
-    self = GuiMainPulseSequence(fpga) 
+    import gui_confocal_optimizer
+    optimizer = gui_confocal_optimizer.GUIOptimizer(fpga)
+    optimizer.show() # Hoh yess, we want to see it !
+    self = GuiMainPulseSequence(fpga,optimizer) 
     self.show()
 
     
