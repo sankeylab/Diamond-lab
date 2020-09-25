@@ -351,6 +351,10 @@ class GuiMainPulseSequence(egg.gui.Window):
         # The method should set the trigger to be external, pulse modulatiion, etc. 
         self.sig_gen.api.prepare_for_ESR()
         
+        # Get the real frequency list
+        fs = np.array(self.sig_gen.api.get_list_frequencies()) # This is in Hz
+        self.gui_ESR.x_axis = fs*1e-9 # In GHz
+        
         # Overird the method to be called after each loop
         self.after_one_loop = self.gui_ESR.after_one_loop    
 
@@ -1336,10 +1340,16 @@ class GUIESR(egg.gui.Window):
         # Get useful parameters for the plot
         self.fmin = self.treeDic_settings['f_min']
         self.fmax = self.treeDic_settings['f_max']       
-        self.x_axis = np.linspace(self.fmin,self.fmax, self.nb_block)
         
         
-        # Trigger a dummy function for signaling to prepare stuffs
+        
+        # DO NOT TAKE OUR OWN FREQUENCY LIST !
+        # Please do not use that again !
+#        self.x_axis = np.linspace(self.fmin,self.fmax, self.nb_block)
+        
+        
+        # Trigger a dummy function for signaling to prepare stuffs in the 
+        # higher level GUI
         self.event_prepare_experiment()
         
         
@@ -1419,7 +1429,9 @@ class GUIESR(egg.gui.Window):
         for key in self.treeDic_settings.get_keys():
             # Add each element of the dictionnary three
             self.databoxplot.insert_header(key , self.treeDic_settings[key])
-                
+        # The x_axis should be prepared in the external GUI 
+        #TODO Find a way to not rely on the external GUI. For example, load the 
+        #  signal generator in this GUI. 
         self.databoxplot['Frequency_(GHz)'] = self.x_axis
         # Loop over each readout 
         for i, count_per_readout in enumerate(self.counts_total):
