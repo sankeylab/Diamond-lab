@@ -356,7 +356,7 @@ class GUIOptimizer(egg.gui.Window):
         The range of the scan is between the attributes self.Vmin and self.Vmax
         
         """
-        _debug('GUIOptimizer: scan_1D') 
+        _debug('GUIOptimizer: scan_1D: AO ', self.AO) 
         
         # Create an array of voltages centered on V0 with the range from the settings. 
         Npts = self.treeDic_settings['Usual/Scan_points']
