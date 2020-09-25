@@ -45,10 +45,24 @@ for i in range(len(d)-1):
     nb_iter = d.headers['iteration']    
     count_rare  =  y*1e6/(dt*rep*nb_iter)
     ecount_rare = ey*1e6/(dt*rep*nb_iter)
-    
     plt.errorbar(t,1e-3*count_rare,yerr=1e-3*ecount_rare,label=label_s[i+1])
 
 plt.legend()    
 plt.xlabel(label_s[0])
 plt.ylabel('KCount/sec')
-plt.title(d.path+'\nPower %d dBm'%d.headers['Power'], fontsize=9)
+
+f = d.headers['Frequency']
+p = d.headers['Power']
+title = d.path+'\nPower %d dBm Freq %.4 GHz'%(p,f)
+plt.title(title, fontsize=9)
+
+
+
+
+
+
+
+
+
+
+

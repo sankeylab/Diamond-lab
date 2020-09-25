@@ -1,8 +1,8 @@
-Power	0.0
+Power	10.0
 Power|expanded	True
-Frequency	2.92
+Frequency	3.047
 Frequency|expanded	True
-N	20
+N	50
 N|expanded	True
 dt_readout	0.4
 dt_readout|expanded	True

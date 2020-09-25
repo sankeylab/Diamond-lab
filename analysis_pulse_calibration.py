@@ -21,9 +21,9 @@ print(d.ckeys)
 print(d.headers)
 
 # Set the followings to tru for showing vertical liones for the time
-show_laser_raise_fall = False
+show_laser_raise_fall = True
 show_RF1_raise_fall   = True
-show_RF1_raise_fall   = True
+show_RF2_raise_fall   = False
     
 ts = d[0]
 counts = d[1]
@@ -43,7 +43,7 @@ if show_RF1_raise_fall:
     toff = d.headers['t_RF1_fall']
     plt.plot([ton, ton]  , [0, cmax], label='RF1 ON')
     plt.plot([toff, toff], [0, cmax], label='RF1 OFF')
-if show_RF1_raise_fall:
+if show_RF2_raise_fall:
     cmax = np.max(counts)
     ton  = d.headers['t_RF2_raise']
     toff = d.headers['t_RF2_fall']
