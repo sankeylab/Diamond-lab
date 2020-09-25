@@ -21,7 +21,7 @@ print(d.ckeys)
 print(d.headers)
 
 # Set the followings to tru for showing vertical liones for the time
-show_laser_raise_fall = True
+show_laser_raise_fall = False
 show_RF1_raise_fall   = True
 show_RF2_raise_fall   = False
     
@@ -53,6 +53,8 @@ if show_RF2_raise_fall:
 plt.legend()
 plt.ylabel('Total counts')
 plt.xlabel('Time after laser turned on (us)')
-
-plt.title(d.path, fontsize=8)
+f = d.headers['Frequency']
+p = d.headers['Power']
+title = d.path+'\nPower %d dBm Freq %.4f GHz'%(p,f)
+plt.title(title, fontsize=10)
 

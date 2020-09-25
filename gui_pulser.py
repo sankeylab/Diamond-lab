@@ -1731,12 +1731,15 @@ class GUIRabi(egg.gui.Window):
         for key in self.treeDic_settings.get_keys():
             # Add each element of the dictionnary three
             self.databoxplot.insert_header(key , self.treeDic_settings[key])
-                
+        # Now add the columns        
         self.databoxplot['Time_(us)'] = self.dt_s
-        # Loop over each readout 
-        for i, count_per_readout in enumerate(self.counts_total):
-            # Add a curve
-            self.databoxplot['Total_counts_%d'%i] = count_per_readout
+        self.databoxplot['counts'] = self.counts_total[0]
+        self.databoxplot['reference'] = self.counts_total[1]
+        # TODO Remove this. This is for a general situation
+#        # Loop over each readout 
+#        for i, count_per_readout in enumerate(self.counts_total):
+#            # Add a curve
+#            self.databoxplot['Total_counts_%d'%i] = count_per_readout
             
         # Show it
         self.databoxplot.plot()   

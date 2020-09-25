@@ -1,6 +1,6 @@
-Power	10.0
+Power	0.0
 Power|expanded	True
-f_min	2.7
+f_min	2.6
 f_min|expanded	True
 f_max	3.1
 f_max|expanded	True
@@ -16,7 +16,7 @@ DIO_laser	2
 DIO_laser|expanded	True
 DIO_change_frequency	7
 DIO_change_frequency|expanded	True
-DIO_pulse_modulation	3
+DIO_pulse_modulation	6
 DIO_pulse_modulation|expanded	True
 DIO_sync_scope	5
 DIO_sync_scope|expanded	True

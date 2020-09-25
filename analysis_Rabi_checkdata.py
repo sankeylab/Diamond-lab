@@ -53,7 +53,7 @@ plt.ylabel('KCount/sec')
 
 f = d.headers['Frequency']
 p = d.headers['Power']
-title = d.path+'\nPower %d dBm Freq %.4 GHz'%(p,f)
+title = d.path+'\nPower %d dBm Freq %.4f GHz'%(p,f)
 plt.title(title, fontsize=9)
 
 
