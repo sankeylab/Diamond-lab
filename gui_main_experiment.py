@@ -315,7 +315,7 @@ if __name__ == '__main__':
     gui_magnet._debug_enabled = False
     import gui_confocal_optimizer
     gui_confocal_optimizer._debug_enabled = True
-    api_fpga.debug_enabled = True
+    api_fpga.debug_enabled = False
     
     print('Hey on es-tu bin en coton-watte')
     

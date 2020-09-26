@@ -25,8 +25,11 @@ show_laser_raise_fall = False
 show_RF1_raise_fall   = True
 show_RF2_raise_fall   = False
     
+rep     = d.headers['repetition']
+nb_iter = d.headers['iteration']
+    
 ts = d[0]
-counts = d[1]
+counts = d[1]/rep/nb_iter # This will be the count per readout
 
 plt.figure()
 plt.plot(ts, counts)
@@ -51,7 +54,7 @@ if show_RF2_raise_fall:
     plt.plot([toff, toff], [0, cmax], label='RF2 OFF') 
        
 plt.legend()
-plt.ylabel('Total counts')
+plt.ylabel('Count per readout')
 plt.xlabel('Time after laser turned on (us)')
 f = d.headers['Frequency']
 p = d.headers['Power']

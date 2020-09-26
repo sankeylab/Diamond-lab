@@ -291,18 +291,31 @@ class GUIMagnetSweepLines(egg.gui.Window):
     """
     #TODO Rewrite it and make sure that it does what it should.
     
-    def __init__(self, magnet3, name='Magnet sweep lines', show=True,size=[1300,600]):
+    def __init__(self, magnet3, optimizer=-1,
+                 name='Magnet sweep lines', show=True,size=[1300,600]):
         """
         Create the GUI 
         
         magnet3:
             The gui object "GUIMagnet" that is used to control the three 
             actuators. 
+        optimizer:
+            GUIOptimizer class object. It is for dealing with the optimization
+            during the run. This object should be the optimizer used in the 
+            higher level gui. Taking it as an input is just allowing us to use 
+            its functionnalities. 
+            If it is set to -1, there will be just nothing happening when it 
+            is time to optimize. 
+            
         """
         _debug('GUIMagnetSweepLines: __init__')
         _debug('The best way to predict your future is to create it. – Abraham Lincoln')
         
+        # Take the inputs
         self.magnet = magnet3 # Steal the magnet gui, mouahhaha
+        self.optimzer = optimizer
+        
+        
         # Get each axis component for saving precious characters lol
         self.X = magnet3.X
         self.Y = magnet3.Y
