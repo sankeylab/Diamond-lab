@@ -4,6 +4,6 @@
 /Actuator/Motion|expanded	True
 /Actuator/Motion/Target_position	8.0
 /Actuator/Motion/Target_position|expanded	True
-/Actuator/Motion/Speed	5.994312065736964e-09
+/Actuator/Motion/Speed	3.336843361357218e-07
 /Actuator/Motion/Speed|expanded	True
 

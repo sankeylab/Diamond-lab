@@ -6,12 +6,16 @@ Created on Fri Aug 21 10:41:45 2020
 """
 
 from api_actuator import ApiActuator
+
 from analysis_mag_sweep_lines import plot_magSweepLinesSettings, plot_magSweepLinesResult
 import spinmob     as _s
 from spinmob import egg
 import time
 import mcphysics   as _mp
 import numpy as np
+from converter import Converter # This convert the sequence object into fpga data
+import api_fpga as _fc # For using the FPGA
+import gui_confocal_optimizer #For sing the optimizer
 
 import traceback
 _p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
@@ -192,12 +196,30 @@ class GUIMagnet(egg.gui.Window):
     Class that combines 3 actuator GUIs in order to control the position of the magnet.  
     """
     
-    def __init__(self, name='Magnet', size=[1300,800]):
+    def __init__(self, fpga, optimizer=-1,
+                 name='Magnet', size=[1300,800]):
         """
         Create the GUI 
+        
+        fpga:
+            "FPGA_api" object from api_fpga.py. 
+            This is the object shared amoung the GUIs for controlling the fpga. 
+            The session of the fpga must already be open.    
+        optimizer:
+            GUIOptimizer class object. It is for dealing with the optimization
+            during the run of the pulse sequence. This object should be the 
+            optimizer used in the higher level gui. Taking it as an input is
+            just allowing us to use its functionnalities. 
+            If it is set to -1, there will be just nothing happening when it 
+            is time to optimize. 
+            
         """
         _debug('GUIMagnet.__init__()', name)
         _debug('Success is going from failure to failure without losing your enthusiasm – Winston Churchill')
+
+        # Get the inputs
+        self.fpga = fpga           
+        self.optimizer = optimizer
 
         # Run the basic stuff for the initialization
         egg.gui.Window.__init__(self, title=name, size=size)
@@ -237,12 +259,12 @@ class GUIMagnet(egg.gui.Window):
                                        alignment=0)
 
         # Tab for sweeping lines
-        self.gui_sweep_lines = GUIMagnetSweepLines(self)
+        self.gui_sweep_lines = GUIMagnetSweepLines(self, self.fpga, self.optimizer)
         self.tab_sweep_lines = self.tabs1.add_tab('Sweep lines')
         self.tab_sweep_lines.place_object(self.gui_sweep_lines, alignment=0)   
         
         # Tab for the list sweep
-        self.gui_list_sweep = GUIMagnetListSweep(self)
+        self.gui_list_sweep = GUIMagnetSweepList(self)
         self.tab_list_sweep = self.tabs1.add_tab('List sweep')
         self.tab_list_sweep.place_object(self.gui_list_sweep, alignment=0)  
         
@@ -287,11 +309,9 @@ class GUIMagnet(egg.gui.Window):
 
 class GUIMagnetSweepLines(egg.gui.Window):
     """
-    Gui for making the actuator to sweep along various lines
+    Gui for making the actuator to sweep along various lines. 
     """
-    #TODO Rewrite it and make sure that it does what it should.
-    
-    def __init__(self, magnet3, optimizer=-1,
+    def __init__(self, magnet3, fpga, optimizer=-1,
                  name='Magnet sweep lines', show=True,size=[1300,600]):
         """
         Create the GUI 
@@ -299,6 +319,10 @@ class GUIMagnetSweepLines(egg.gui.Window):
         magnet3:
             The gui object "GUIMagnet" that is used to control the three 
             actuators. 
+        fpga:
+            "FPGA_api" object from api_fpga.py. 
+            This is the object shared amoung the GUIs for controlling the fpga. 
+            The session of the fpga must already be open.    
         optimizer:
             GUIOptimizer class object. It is for dealing with the optimization
             during the run. This object should be the optimizer used in the 
@@ -312,8 +336,9 @@ class GUIMagnetSweepLines(egg.gui.Window):
         _debug('The best way to predict your future is to create it. – Abraham Lincoln')
         
         # Take the inputs
-        self.magnet = magnet3 # Steal the magnet gui, mouahhaha
-        self.optimzer = optimizer
+        self.magnet   = magnet3 # Steal the magnet gui, mouahhaha
+        self.fpga     = fpga
+        self.optimizer = optimizer
         
         
         # Get each axis component for saving precious characters lol
@@ -339,10 +364,12 @@ class GUIMagnetSweepLines(egg.gui.Window):
                                             0,0, alignment=1)
         self.button_run.disable() # Disable until we have imported or set the settings
         self.connect(self.button_run.signal_clicked, self.button_run_clicked )  
+        
         # A Button for resetting the sweep
         self.button_reset = self.place_object(egg.gui.Button('Reeeset'), 
                                               0,1, alignment=1)
-        self.button_reset.signal_toggled.connect(self.button_reset_clicked)   
+        self.connect(self.button_reset.signal_clicked, self.button_reset_clicked )
+        
         #Add a button for loading the data
         self.button_load_settings = self.place_object(egg.gui.Button('Load settings'),
                                                   1,0, alignment=1)
@@ -372,6 +399,10 @@ class GUIMagnetSweepLines(egg.gui.Window):
                                             type='float', 
                                             bounds=[0.0001, None], suffix=' um',
                                             tip='Distance between each point to record')
+        self.treeDic_settings.add_parameter('nb_line_before_optimize', 1, 
+                                            type='int', 
+                                            bounds=[0, None],
+                                            tip='Number of line to sweep before triggering the optimization.\nPut zero for never optimizing')
         # Add a table for the trajectories of the lines. 
         self.table_trajectories  = egg.gui.Table()
         self.place_object(self.table_trajectories, row=6, column=0, column_span=2) 
@@ -644,7 +675,78 @@ class GUIMagnetSweepLines(egg.gui.Window):
             self.is_running = False
             self.button_run.set_text('Continue')
             self.button_run.set_colors(background='green')         
+
+    def initiate_line_sweep(self):
+        """
+        Initiate the fpga for the line  of the magnet. 
+        """
+        _debug('GUIMagnetSweepLines: initiate_line_sweep')
         
+        # Very similiar to the method "prepare_acquisition" of GUICount
+        # The main idea is to prepare the fpga for counting the right interval of time. 
+        
+        #First get the count time
+        self.count_time_ms = self.treeDic_settings['time_per_point']
+        
+        # Set the fpga NOT in each tick mode
+        self.fpga.set_counting_mode(False)
+        
+        # Create the data array from counting
+        # Prepare DIO1 in state 1
+        self.fpga.prepare_DIOs([1], [1]) 
+        # Get the actual DIOs, because there might be other DIOs open.
+        self.dio_states = self.fpga.get_DIO_states() 
+        # Convert the instruction into the data array
+        conver = Converter() # Load the converter object.
+        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
+        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
+        
+         # Send the data_array to the FPGA
+        self.fpga.prepare_pulse(self.data_array)
+
+    def take_counts(self):
+        """
+        Take the photocounts and update the value. 
+        """
+        _debug('GUIMagnetSweepLines: take_counts')
+        # The fpga should already contain the pulse sequence for taking the counts
+        
+        # Get the counts (d'uh !)
+        # Two step: runt he pulse pattern and get the counts. 
+        self.fpga.run_pulse() 
+        self.counts =  self.fpga.get_counts()[0]
+        self.data_w = self.counts
+        # The following is just if we care
+        #TODO remove it if this quantity is not used at all in the GUI
+        # Note also that this quantity can be retrieved in the save file by 
+        # knowing the count time. 
+        self.counts_per_sec = 1e3*self.counts/self.count_time_ms  
+    
+    
+    def one_line_is_swept(self):
+        """
+        Trigger the optimization. 
+        """
+        _debug('GUIMagnetSweepLines: scan_line_optimize')
+        
+        # Optimizae only if the sweep is still running. 
+        #TODO Remove the first if, because if this is called, it is necessarly 
+        #     because the magnet scan was running ! Check the example of 
+        #     the optimizer ?
+        if self.is_running:
+            iteration = self.gui_magnet.gui_sweep_lines.iter
+            m = self.gui_magnet.gui_sweep_lines.treeDic_settings['nb_line_before_optimize']
+            if m != 0:
+                # If it's zero, we never optimize
+                if iteration % m == (m-1):
+                    _debug('GUIMainExperiment: magnet_scan_line_optimize:decide to optimize')
+                    
+                    # Note that it was the magnet line scan that was running
+                    self.magnet_scan_line_was_running_before_optimizing = True
+                    # Optimize
+                    self.gui_confocal.gui_optimizer.button_optimize_clicked()          
+        
+          
     def run_sweep(self):
         """
         Run the sweep along the lines. 
@@ -658,9 +760,11 @@ class GUIMagnetSweepLines(egg.gui.Window):
             # Update the settings of the databox
             self.databox_setting_update()
             
-            # Extract the settings
+            # Extract the settings for easier access
             self.resolution = self.treeDic_settings['resolution']
             self.time_per_point = self.treeDic_settings['time_per_point']
+            self.nb_line_before_optimize = self.treeDic_settings['nb_line_before_optimize']
+            # Determine the scalar speed of the magnet
             self.speed = self.resolution/self.time_per_point # It should be in mm/s. The settings are in um/ms = mm/sec. Cool 
             # Adjust the settings if that makes a speed to high
             if self.speed >2:
@@ -678,7 +782,7 @@ class GUIMagnetSweepLines(egg.gui.Window):
             self.nb_iter = len(self.xs_setting)
             
             # Signal the initialization
-            self.event_initiate_sweep()
+            self.initiate_line_sweep()
             # Go on the initial position 
             self.statut = 'Reaching the initial position'
             self.label_info_update()   
@@ -726,8 +830,18 @@ class GUIMagnetSweepLines(egg.gui.Window):
             self.statut = 'The line %d is completed'%self.iter
             self.label_info_update()
 
-            # Send a signal to inform that the line is done
-            self.event_one_line_is_swept()
+            # Optimize if it is appropriate
+            if (self.nb_line_before_optimize>0) and not(self.optimizer==-1):
+                if self.iter%self.nb_line_before_optimize == self.nb_line_before_optimize-1:
+                    _debug('GUIMagnetSweepLines: run_sweep: event_optimize sent!')
+                    # Update the info
+                    self.statut = 'Optimizing after the line %d'%self.iter
+                    self.label_info_update()
+                    # Optimize !
+                    self.optimizer.button_optimize.click()
+                    # The fpga settings change during optimization. 
+                    #We need to put them back.
+                    self.initiate_line_sweep()
             
             # Update the condition of the scan
             self.iter += 1
@@ -819,9 +933,9 @@ class GUIMagnetSweepLines(egg.gui.Window):
              #Allow the GUI to update. This is important to avoid freezing of the GUI inside loop
             self.process_events()
             
-            # Call a signal. 
+            # Take the counts from the fpga
             # This function is in charge to give the time delay for not blowing the CPU with an almost infinite loop
-            self.event_scan_line_checkpoint()
+            self.take_counts() # It updates self.data_w
             ws.append(self.data_w)
             
             # Note the condition for keeping doing
@@ -834,45 +948,47 @@ class GUIMagnetSweepLines(egg.gui.Window):
         _debug('GUIMagnetSweepLines: scan_xyz_line: Done')
         
         return (xs, ys, zs, ws)
-    
-    def event_initiate_sweep(self):
-        """
-        Dummy function to be overrid. 
-        This is called when we start the sweep. 
-        For example, this can be overideen to prepare the photocounter. 
-        """
-        _debug('GUIMagnetSweepLines: event_scan_initiate_sweep')
-        print('Congratulation ! Its a neodymium !')
+ 
+#TODO Remove the followings if everything is fine. 
+#    def event_initiate_sweep(self):
+#        """
+#        Dummy function to be overrid. 
+#        This is called when we start the sweep. 
+#        For example, this can be overideen to prepare the photocounter. 
+#        """
+#        _debug('GUIMagnetSweepLines: event_scan_initiate_sweep')
+#        print('Congratulation ! Its a neodymium !')
         
-    def event_scan_line_checkpoint(self):
-        """
-        Dummy function to be overrid. It should update the value of self.data_w
-        because this value will be appended to the list. 
-        This is done when we scan a straight line, each time that we reach a
-        point to record.
-        """
-        _debug('GUIMagnetSweepLines: event_scan_line_checkpoint')
-        print('Hey congratulation! You are at iteration ', self.iter)
-        # Fake the wait time for taking the counts. 
-        time.sleep(self.time_per_point*1e-3)
-        # fake 4-dimensional data. This should be overid, for example, by the 
-        # photocounts
-        self.data_w = np.random.poisson(1000)
+#    def event_scan_line_checkpoint(self):
+#        """
+#        Dummy function to be overrid. It should update the value of self.data_w
+#        because this value will be appended to the list. 
+#        This is done when we scan a straight line, each time that we reach a
+#        point to record.
+#        """
+#        _debug('GUIMagnetSweepLines: event_scan_line_checkpoint')
+#        print('Hey congratulation! You are at iteration ', self.iter)
+#        # Fake the wait time for taking the counts. 
+#        time.sleep(self.time_per_point*1e-3)
+#        # fake 4-dimensional data. This should be overid, for example, by the 
+#        # photocounts
+#        self.data_w = np.random.poisson(1000)
         
-    def event_one_line_is_swept(self):
-        """
-        Dummy funciton to be overrid. 
-        This is called each time that one line is swept.
-        """
-        _debug('GUIMagnetSweepLines: event_one_line_is_swept')
+#    def event_one_line_is_swept(self):
+#        """
+#        Dummy funciton to be overrid. 
+#        This is called each time that one line is swept.
+#        """
+#        _debug('GUIMagnetSweepLines: event_one_line_is_swept')
         
         
-class GUIMagnetListSweep(egg.gui.Window):
+class GUIMagnetSweepList(egg.gui.Window):
     """
     Gui for making the actuator to go at each position in the list and perform 
     a task at each single position.
     """
     #TODO Rewrite it and make sure that it does what it should.
+    #TODO For example, like labview, run a pulse sequence at each position
     #TODO FOr example, exctrat X, Y and Z components of magnet3
     
     def __init__(self, magnet3, name='Magnet sweep list', show=True, size=[1300,600]):
@@ -882,7 +998,7 @@ class GUIMagnetListSweep(egg.gui.Window):
         magnet3:
             The gui object "GUIMagnet" that is used to control the three actuator. 
         """
-        _debug('GUIMagnetListSweep: __init__', name)
+        _debug('GUIMagnetSweepList: __init__', name)
         _debug('Don’t watch the clock; do what it does. Keep going. – Sam Levenson')
         
         # Run the basic stuff for the initialization
@@ -909,7 +1025,7 @@ class GUIMagnetListSweep(egg.gui.Window):
         """
         Load a list of x,y,z points for the magnetic field sweep
         """
-        _debug('GUIMagnetListSweep._button_load_list_toggled()')
+        _debug('GUIMagnetSweepList._button_load_list_toggled()')
         
         #Load the list. 
         self.d = _s.data.load(text='Load list of x,y,z positions ;)', filters="*.csv")
@@ -926,7 +1042,7 @@ class GUIMagnetListSweep(egg.gui.Window):
         Move the actuator at each x,y,z position loaded in the table self.table_positions
         Perfom something at each of these position. We have to thing more about how to implement this within the master GUI. 
         """
-        _debug('GUIMagnetListSweep._button_scan_magnet_toggled')
+        _debug('GUIMagnetSweepList._button_scan_magnet_toggled')
         
 
         
@@ -984,7 +1100,7 @@ class GUIMagnetListSweep(egg.gui.Window):
             The name of the file if it succed OR
             An error message corresponding to what happened. 
         """
-        _debug('GUIMagnetListSweep.fill_table_positions()')
+        _debug('GUIMagnetSweepList.fill_table_positions()')
         
         #Try to open the data
         try: 
@@ -1031,7 +1147,7 @@ class GUIMagnetListSweep(egg.gui.Window):
                           Then wait that the three actuator finish to move. 
         
         """
-        _debug('GUIMagnetListSweep.go_to()', actuator, column, row)
+        _debug('GUIMagnetSweepList.go_to()', actuator, column, row)
         
         #Set the target position
         r = self.table_positions.get_value(column=column, row=row)
@@ -1095,7 +1211,7 @@ class GUIMagnetListSweep(egg.gui.Window):
         i is the iteration in the table (the i'th row), such that we can perform 
         a task depending on the iteration. 
         """
-        _debug('GUIMagnetListSweep: after_scan_set_positions', i)
+        _debug('GUIMagnetSweepList: after_scan_set_positions', i)
         
         print('On the %dth row ;)'%i)        
 
@@ -1107,46 +1223,19 @@ if __name__ == '__main__':
     api_actuator._debug_enabled
     
 #    cc = ApiActuator().
-    self = GUIMagnet(name='Magnetooooo') 
-    self.show()
-    
 
-#        
-#    fig = plt.figure()
-#    ax = fig.add_subplot(111, projection='3d')   
-#    ax.scatter(xtots, ytots, ztots) 
-#    ax.scatter(xtots[0], ytots[0], ztots[0], color='red',label='First')
-#    ax.scatter(xtots[-1], ytots[-1], ztots[-1], color='y',label='End')
-#    plt.legend()
-#    ax.set_xlabel('x (mm)')
-#    ax.set_ylabel('y (mm)')
-#    ax.set_zlabel('z (mm)')
-#    # Set equal aspect
-#    # First get the extermum of all the pts
-#    allpts = np.concatenate((xtots, ytots, ztots))
-#    maximum = np.max(allpts)
-#    minimum = np.min(allpts)
-#    ax.set_xlim3d(minimum, maximum)
-#    ax.set_ylim3d(minimum, maximum)
-#    ax.set_zlim3d(minimum, maximum)    
-#    
+
+    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
+                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
+    resource_num = "RIO0"         
+    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+    fpga.open_session()
     
-    
-    
-#    # Old scan
-#    self.scan_xyz_line(20.5, 9.3, 17.7, speed=1, N=40)
-#    xtots.extend(self.xs)
-#    ytots.extend(self.ys)
-#    ztots.extend(self.zs)
-#    self.scan_xyz_line(14, 9.4, 10, speed=1, N=40)
-#    xtots.extend(self.xs)
-#    ytots.extend(self.ys)
-#    ztots.extend(self.zs)
-#    self.scan_xyz_line(17, 14, 17.7, speed=1, N=40)
-#    xtots.extend(self.xs)
-#    ytots.extend(self.ys)
-#    ztots.extend(self.zs)   
-    
-    
-    
+    optimizer = gui_confocal_optimizer.GUIOptimizer(fpga)
+    optimizer.show() # Hoh yess, we want to see it !
+
+    self = GUIMagnet(fpga, optimizer, name='Magnetooooo') 
+    self.show()
+
+
     
