@@ -200,8 +200,8 @@ if __name__ == '__main__':
     # Uncomment the type of sweep that you want to create
 #    xs, ys, zs = tilted_plane()
 #    xs, ys, zs = parallel_plane()
-    xs, ys, zs = rectangle_parallel_zfixed(c1 = [20, 10],
-                                           c3 = [25, 15],
+    xs, ys, zs = rectangle_parallel_zfixed(c1 = [20, 13],
+                                           c3 = [25, 18],
                                            Nzigzag=23, z=8)
     
     # Save the data into a databox
