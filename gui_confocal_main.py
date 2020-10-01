@@ -190,7 +190,7 @@ class GUIMainConfocal(egg.gui.Window):
 
 if __name__ == '__main__':
     
-    import api_fpga as _fc
+    import api_fpga
     import gui_confocal_counts as cc
     import gui_confocal_optimizer as co
     import gui_confocal_DIOsAOs_control as cdc
@@ -201,15 +201,17 @@ if __name__ == '__main__':
     co._debug_enabled  = True
     cc._debug_enabled  = False
     _debug_enabled     = True
-    _fc._debug_enabled = True
+    api_fpga._debug_enabled = True
     
     print('Hey on es-tu bin en coton-watte')
     
-     # Create the fpga api
-    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
-                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
-    resource_num = "RIO0"     
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+    # Get the fpga paths and ressource number
+    import spinmob as sm
+    infos = sm.data.load('cpu_specifics.dat')
+    bitfile_path = infos.headers['FPGA_bitfile_path']
+    resource_num = infos.headers['FPGA_resource_number']
+    # Get the fpga API
+    fpga = api_fpga.FPGA_api(bitfile_path, resource_num) 
     fpga.open_session()
 
     self = GUIMainConfocal(fpga)
