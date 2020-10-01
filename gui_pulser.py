@@ -4339,13 +4339,16 @@ if __name__ == '__main__':
     _debug_enabled     = True
 
 
-     # Create the fpga api
-    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
-                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
-    resource_num = "RIO0"     
-    
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+    # Get the fpga paths and ressource number
+    import spinmob as sm
+    infos = sm.data.load('cpu_specifics.dat')
+    bitfile_path = infos.headers['FPGA_bitfile_path']
+    resource_num = infos.headers['FPGA_resource_number']
+    # Get the fpga API
+    fpga = _fc.FPGA_api(bitfile_path, resource_num) 
     fpga.open_session()
+    
+    
     import gui_confocal_optimizer
     optimizer = gui_confocal_optimizer.GUIOptimizer(fpga)
     optimizer.show() # Hoh yess, we want to see it !
