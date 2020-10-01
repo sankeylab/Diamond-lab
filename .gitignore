@@ -1,0 +1,12 @@
+# Ignore the settings because the DIOs and AOs depends on the setup
+gui_settings
+egg_settings
+
+
+# Not sure yet of what that is, but there is no need to share between setup
+__pycache__/
+
+# The following file contain information specific to the setup
+cpu_specifics.dat
+
+
