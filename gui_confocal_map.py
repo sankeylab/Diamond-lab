@@ -525,7 +525,7 @@ class GUIMap(egg.gui.Window):
         """
         _debug('GUIMap: prepare_acquisition')
         
-#TODO remove the commented code if everything works fine
+##TODO remove the commented code if everything works fine
 #        # Create the data array from counting
 #        # Prepare DIO1 in state 1
 #        self.fpga.prepare_DIOs([1], [1]) 
@@ -533,6 +533,7 @@ class GUIMap(egg.gui.Window):
 #        self.dio_states = self.fpga.get_DIO_states() 
 #        # Convert the instruction into the data array
 #        conver = Converter() # Load the converter object.
+
 
         # Update the wait time
         wait_AO_time = self.treeDic_settings['Wait_after_AOs']
@@ -545,8 +546,7 @@ class GUIMap(egg.gui.Window):
         self.fpga.prepare_counting_pulse(self.count_time_ms, nb_ticks_off=120)
 
         
-        
-        
+               
 #        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
 #        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
 #        
@@ -554,6 +554,7 @@ class GUIMap(egg.gui.Window):
 #        
 #         # Send the data_array to the FPGA
 #        self.fpga.prepare_pulse(self.data_array)
+        
 
     def match_attributes_with_gui(self):
         """

@@ -151,7 +151,7 @@ class GUIDIOsAOsControl(egg.gui.Window):
         # Prepare the fpga with the values    
         self.fpga.prepare_AOs(self.list_AOs, self.list_AO_voltages)
         self.fpga.prepare_pulse(self.new_datas, 
-                                is_zero_ending=False,
+                                nb_ticks_off=0,
                                 list_DIO_state = self.new_DIO_states)            
         self.fpga.prepare_wait_time(self.fpga.get_wait_time_us()) 
         

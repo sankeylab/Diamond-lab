@@ -489,12 +489,12 @@ class FPGA_api():
 #        print('start.read = ', self.start.read())
 #        print("Counts = %s" % self.counts)
 #        print("Element remaing: ", num_elems)        
-        _debug('start.read = ', self.start.read())
-        _debug("Counts = %s" % self.counts)
-        _debug("Element remaing: ", num_elems)
+        _debug('FPGA_api: run_pulse: start.read = ', self.start.read())
+        _debug("FPGA_api: run_pulse: Counts = %s" % self.counts)
+        _debug("FPGA_api: run_pulse: Element remaing: ", num_elems)
         if len(self.counts)>0: 
             # Get the mean only if the array is not empty.
-            _debug("Mean counts = ", np.mean(self.counts))
+            _debug("FPGA_api: run_pulse: Mean counts = ", np.mean(self.counts))
                      
     def run_pulse_loop(self, data_array, N_loopFPGA):
         """
@@ -519,6 +519,8 @@ class FPGA_api():
                 
 class FPGA_fake_api():
     """
+    TODO Update it with the new fpga api. It is note updated yet. 
+    
     Fake api for the fpga. 
     
     It has the same method has FPGA_api, but without connecting to a real FPGA. 
