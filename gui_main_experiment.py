@@ -14,7 +14,6 @@ import gui_pulser
 import gui_saturation
 import gui_pipulse_optimization
 import gui_magnet
-from converter import Converter # For converting the pattern for counting
 
 import sys # Useful for error handling
 import traceback
