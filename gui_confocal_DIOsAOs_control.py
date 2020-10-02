@@ -56,7 +56,8 @@ class GUIDIOsAOsControl(egg.gui.Window):
         egg.gui.Window.__init__(self, title=name, size=size)
 
         self.fpga = fpga
-        
+        self.is_updating_gui_with_fpga = False # Weither or not we are updating the gui to match the fpga value
+
         
         # Fill up the GUI 
         self.initialize_GUI()
@@ -159,7 +160,9 @@ class GUIDIOsAOsControl(egg.gui.Window):
         self.fpga.lets_go_FPGA()  
         
         # Call the event to say "hey, stuff changed on the fpga"
-        self.event_fpga_change()
+        if not(self.is_updating_gui_with_fpga):
+            # Call it only if we are not updating the gui with the fpga
+            self.event_fpga_change() 
             
     def event_fpga_change(self):
         """
@@ -177,6 +180,9 @@ class GUIDIOsAOsControl(egg.gui.Window):
         """
         _debug('GUIDIOsAOsControl: update_GUI_with_fpga')
         
+        # Note that we are updating the value of the gui
+        self.is_updating_gui_with_fpga = True
+        
         # Update the DIOs
         # Get the states of the fpga
         dio_states = self.fpga.get_DIO_states()
@@ -191,7 +197,9 @@ class GUIDIOsAOsControl(egg.gui.Window):
             key = 'AO_%d/Voltage'%AO
             self.treeDict_AOs[key] = V
 #            print(key, V) # For troubleshooting
-        
+
+        # Note that we are done updating the value of the gui
+        self.is_updating_gui_with_fpga = False       
         
 
 

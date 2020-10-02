@@ -52,6 +52,7 @@ class GUIOptimizer(egg.gui.Window):
         self.fpga = fpga
         
         self.is_optimizing = False # Weither or not we are optimizing
+        self.is_updating_gui_with_fpga = False # Weither or not we are updating the gui to match the fpga value
 
         # Fill up the GUI 
         self.initialize_GUI()
@@ -207,7 +208,9 @@ class GUIOptimizer(egg.gui.Window):
         self.fpga.prepare_counting_pulse(self.count_time_ms, nb_ticks_off=120)
         
         # Call the event to say "hey, stuff changed on the fpga"
-        self.event_fpga_change()        
+        if not(self.is_updating_gui_with_fpga):
+            # Call it only if we are not updating the gui with the fpga
+            self.event_fpga_change()        
         
     def button_optimize_clicked(self):
         """
@@ -313,13 +316,18 @@ class GUIOptimizer(egg.gui.Window):
         # Set the fpga in this new position 
         self.fpga.prepare_AOs([int(self.AOx), int(self.AOy), int(self.AOz)], 
                                [self.vx_new, self.vy_new, self.vz_new]) 
+        
         # Run the FPGA for updating its settings
         # It gonna run also the pre-existing pulse sequence. Hopefully it's 
         # gonna be the counter. 
         self.fpga.lets_go_FPGA()
         
         #TODO Remove this. Because The fpga will change anyway later. 
-#        self.event_fpga_change()          
+#        # Call the event to say "hey, stuff changed on the fpga"
+        # Call the event to say "hey, stuff changed on the fpga"
+#        if not(self.is_updating_gui_with_fpga):
+#            # Call it only if we are not updating the gui with the fpga
+#            self.event_fpga_change()               
 
     def offset_remove_them(self):
         """
@@ -343,7 +351,9 @@ class GUIOptimizer(egg.gui.Window):
         self.fpga.lets_go_FPGA()
         
         # Call the event to say "hey, stuff changed on the fpga"
-        self.event_fpga_change()            
+        if not(self.is_updating_gui_with_fpga):
+            # Call it only if we are not updating the gui with the fpga
+            self.event_fpga_change()               
             
     def parabola(self, x, x0, dx, y0):
         """
@@ -385,7 +395,9 @@ class GUIOptimizer(egg.gui.Window):
             self.process_events()   
             
             # Call the event to say "hey, stuff changed on the fpga"
-            self.event_fpga_change()                 
+            if not(self.is_updating_gui_with_fpga):
+                # Call it only if we are not updating the gui with the fpga
+                self.event_fpga_change()                       
             
     def find_max(self):
         """
@@ -421,7 +433,9 @@ class GUIOptimizer(egg.gui.Window):
             self.fpga.prepare_AOs([int(self.AO)], [self.v_best])  
             
             # Call the event to say "hey, stuff changed on the fpga"
-            self.event_fpga_change()                
+            if not(self.is_updating_gui_with_fpga):
+                # Call it only if we are not updating the gui with the fpga
+                self.event_fpga_change()                   
             
             self.fit_worked = True
             
@@ -635,8 +649,12 @@ class GUIOptimizer(egg.gui.Window):
         That is useful for the implementation with other GUI that also 
         modifies the fpga. 
         """
+        _debug('GUIOptimizer: update_GUI_with_fpga') 
+        self.is_updating_gui_with_fpga = True
         # There is no widget to match for now
+        self.is_updating_gui_with_fpga = False
         return
+    
 
     def event_optimize_starts(self):
         """

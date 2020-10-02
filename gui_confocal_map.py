@@ -67,9 +67,9 @@ class GUIMap(egg.gui.Window):
         self.is_scanning = False # Weither or not the scan is running
         self.list_databox_scans =[] # Store the informations for many slices 
         self.nb_of_slice = 0  # Actual number of stored slice    
-        self.nb_max_slice = 5 # Maximum number of slice to store
-        
+        self.nb_max_slice = 5 # Maximum number of slice to store        
         self.label_slice_date = '' # Label shown on the slice
+        self.is_updating_gui_with_fpga = False # Weither or not we are updating the gui to match the fpga value
         
         # Fill up the GUI 
         self.initialize_GUI()
@@ -285,7 +285,9 @@ class GUIMap(egg.gui.Window):
         self.fpga.lets_go_FPGA()
 
         # Call the event to say "hey, stuff changed on the fpga"
-        self.event_fpga_change()
+        if not(self.is_updating_gui_with_fpga):
+            # Call it only if we are not updating the gui with the fpga
+            self.event_fpga_change() 
         
     def update_slice_shown(self):
         """
@@ -1136,7 +1138,9 @@ class GUIMap(egg.gui.Window):
         self.fpga.lets_go_FPGA()
 
         # Call the event to say "hey, stuff changed on the fpga"
-        self.event_fpga_change()
+        if not(self.is_updating_gui_with_fpga):
+            # Call it only if we are not updating the gui with the fpga
+            self.event_fpga_change() 
         
     def set_voltage_y(self, Vy):
         """
@@ -1157,7 +1161,9 @@ class GUIMap(egg.gui.Window):
         self.fpga.lets_go_FPGA()
 
         # Call the event to say "hey, stuff changed on the fpga"
-        self.event_fpga_change()
+        if not(self.is_updating_gui_with_fpga):
+            # Call it only if we are not updating the gui with the fpga
+            self.event_fpga_change() 
         
     def update_GUI_with_fpga(self):
         """
@@ -1166,6 +1172,9 @@ class GUIMap(egg.gui.Window):
         modifies the fpga. 
         """
         _debug('GUIMap: update_GUI_with_fpga')
+        
+        # Note that we are updating the value of the gui
+        self.is_updating_gui_with_fpga = True
         
         if not(self.is_scanning): # Don't mess up with the scan lol
             # Update the value of the Z voltage
@@ -1178,6 +1187,9 @@ class GUIMap(egg.gui.Window):
             Vy = self.fpga.get_AO_voltage(AOy)
             self.ptROI.setPos((Vx - self.size_ptROI_x/2,
                                Vy - self.size_ptROI_y/2))       
+
+        # Note that we are done updating the value of the gui
+        self.is_updating_gui_with_fpga = False       
             
     def event_fpga_change(self):
         """
