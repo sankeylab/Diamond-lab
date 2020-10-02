@@ -688,22 +688,26 @@ class GUIMagnetSweepLines(egg.gui.Window):
         
         #First get the count time
         self.count_time_ms = self.treeDic_settings['time_per_point']
+        # Put 120 tick off, because Labview also put 120 ticks off (=1us)
+        self.fpga.prepare_counting_pulse(self.count_time_ms, nb_ticks_off=120)
         
-        # Set the fpga NOT in each tick mode
-        self.fpga.set_counting_mode(False)
         
-        # Create the data array from counting
-        # Prepare DIO1 in state 1
-        self.fpga.prepare_DIOs([1], [1]) 
-        # Get the actual DIOs, because there might be other DIOs open.
-        self.dio_states = self.fpga.get_DIO_states() 
-        # Convert the instruction into the data array
-        conver = Converter() # Load the converter object.
-        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
-        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
-        
-         # Send the data_array to the FPGA
-        self.fpga.prepare_pulse(self.data_array)
+#TODO remove these commented lines when everything will be sure to work.         
+#        # Set the fpga NOT in each tick mode
+#        self.fpga.set_counting_mode(False)
+#        
+#        # Create the data array from counting
+#        # Prepare DIO1 in state 1
+#        self.fpga.prepare_DIOs([1], [1]) 
+#        # Get the actual DIOs, because there might be other DIOs open.
+#        self.dio_states = self.fpga.get_DIO_states() 
+#        # Convert the instruction into the data array
+#        conver = Converter() # Load the converter object.
+#        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
+#        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
+#        
+#         # Send the data_array to the FPGA
+#        self.fpga.prepare_pulse(self.data_array)
 
     def take_counts(self):
         """
@@ -1226,10 +1230,13 @@ if __name__ == '__main__':
 #    cc = ApiActuator().
 
 
-    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
-                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
-    resource_num = "RIO0"         
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+    # Get the fpga paths and ressource number
+    import spinmob as sm
+    infos = sm.data.load('cpu_specifics.dat')
+    bitfile_path = infos.headers['FPGA_bitfile_path']
+    resource_num = infos.headers['FPGA_resource_number']
+    # Get the fpga API
+    fpga = _fc.FPGA_api(bitfile_path, resource_num) 
     fpga.open_session()
     
     optimizer = gui_confocal_optimizer.GUIOptimizer(fpga)
