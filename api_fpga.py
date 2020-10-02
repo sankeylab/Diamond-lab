@@ -11,7 +11,6 @@ API for controlling the fpga
 from nifpga.session import Session
 import numpy as np
 
-
 import traceback
 _p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
 
@@ -368,7 +367,7 @@ class FPGA_api():
         
         if is_zero_ending:
             # Need to add zeros at the beggining and at the end for the caprice of FPGA for pulse sequences
-            d = np.concatenate(([120], data_array,[120])) 
+            d = np.concatenate(([1], data_array,[1])) 
             self.data = np.array(d, dtype='int32') # Data to write to fpga
         else:
             self.data = np.array(data_array, dtype='int32') # Data to write to fpga
@@ -438,32 +437,25 @@ class FPGA_api():
 #        
         # Query until there is no more reading to do. 
         condition = True
-        while condition==True:            
-            # Take note if the sequence is still running
-            condition1 =  self.start.read()            
+        while condition==True:
+            condition1 =  self.start.read()  # Check at the beggining if the 
             # Note the number of elements in the fifo
-            #The argument "0" ensures that nothing is read and erased
-            num_elems = self.th_fifo.read(0).elements_remaining        
-#            _debug('FPGA_api: run_pulse 1 condition1 = ', condition1)
-#            _debug("FPGA_api: run_pulse 1 Element remaing: ", num_elems)
+            num_elems = self.th_fifo.read(0).elements_remaining #The argument "0" ensures that nothing is read and erased            
+#            _debug('start.read = ', self.start.read())
+#            _debug("Element remaing: ", num_elems)
             # Read the elements remaining and store them into counts 
             count_array = self.th_fifo.read(num_elems).data # It output an array containing each count
             self.counts.extend( count_array ) # This adds each element of the input array
             # Update the while loop condition
             condition2 = num_elems>0
             condition = condition1 or condition2
-#            _debug("FPGA_api: run_pulse 2 count_array    : ", count_array)            
-#            _debug('FPGA_api: run_pulse 2 condition1 = ', condition1)
-#            _debug("FPGA_api: run_pulse 2 Element remaing: ", num_elems)
-#        time.sleep(0.01)
-#        num_elems = self.th_fifo.read(0).elements_remaining
 
+#        print('start.read = ', self.start.read())
 #        print("Counts = %s" % self.counts)
 #        print("Element remaing: ", num_elems)        
-        _debug('FPGA_api: run_pulse: end of while loop')
-        _debug('FPGA_api: run_pulse: start.read = ', condition1)
-        _debug("FPGA_api: run_pulse: Counts = %s" % self.counts)
-        _debug("FPGA_api: run_pulse: Element remaing: ", num_elems)
+        _debug('start.read = ', self.start.read())
+        _debug("Counts = %s" % self.counts)
+        _debug("Element remaing: ", num_elems)
         if len(self.counts)>0: 
             # Get the mean only if the array is not empty.
             _debug("Mean counts = ", np.mean(self.counts))
@@ -918,13 +910,8 @@ if __name__=="__main__":
     _debug_enabled                = True
 
     # Send that to the FPGA
-     # Setup 2 bitfile path
-    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control SetUp 2 - Windows 10\FPGA Bitfiles"
-                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_DX29Iv2+L+Y.lvbitx")
-    
-    # Setup 1 bitfile path
-#    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
-#                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
+    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
+                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
     resource_num = "RIO0"     
     
     self = FPGA_api(bitfile_path, resource_num) # Create the api

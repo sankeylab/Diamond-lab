@@ -56,8 +56,8 @@ if show_RF2_raise_fall:
 plt.legend()
 plt.ylabel('Count per readout')
 plt.xlabel('Time after laser turned on (us)')
-f = d.headers['Frequency']
-p = d.headers['Power']
+f = d.headers['Frequency1']
+p = d.headers['Power1']
 title = d.path+'\nPower %d dBm Freq %.4f GHz'%(p,f)
 plt.title(title, fontsize=10)
 

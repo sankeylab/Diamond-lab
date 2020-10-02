@@ -16,13 +16,23 @@ import matplotlib.pyplot as plt
 d = sm.data.load(text="Load Rabi maaaan !",
                  filters="*.dat")
 
+# Check the headers
+print(d.headers)
 
    
 t   = d[0]
-PL  = d[1]
-PLe = np.sqrt(PL)
-    
-    
+total_counts  = d[1]
+etotal_counts = np.sqrt(total_counts)
+
+dt = d.headers['dt_readout'] # count time in us
+rep = d.headers['repetition']
+nb_iter = d.headers['iteration']
+count_rate  = total_counts*1e6/(nb_iter*rep*dt) 
+ecount_rate = etotal_counts*1e6/(nb_iter*rep*dt)     
+
+
+PL = count_rate
+PLe = ecount_rate
 ### Plot the data
 plt.figure()
 plt.errorbar(t, PL, PLe, fmt='o')
@@ -91,9 +101,11 @@ label =( 'Parabola fit\nMinimum occurs at %.3f +- %.3f us'%(x0,x0_e)
        +'\nContrast = (Max-Min)/Max = %.2f percent'%(contrast*100))
 plt.plot(xForFit, y/1000, 'r-', linewidth=3.0, label=label) 
 plt.xlabel('Time for the microwave pulse (us)')
-plt.ylabel('Total Counts (Kcounts)')
+plt.ylabel('Count rate (Kcounts/sec)')
 plt.legend(loc='best')
-plt.title(d.path, fontsize=8)
+
+txt = (d.path+'\nPower %.2f dBm'%d.headers['Power']+' Frequency %.4f GHz'%d.headers['Frequency'])
+plt.title(txt, fontsize=8)
 
 
 

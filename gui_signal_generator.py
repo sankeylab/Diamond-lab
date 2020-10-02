@@ -1270,6 +1270,21 @@ class simq03b_api(_mp.visa_tools.visa_api_base):
         return int(s)
 
 
+    def prepare_for_ESR(self):
+        """
+        Prepare the instrument for ESR measurement.
+        Set the trigger to be external, pulse modulation, etc. 
+        """
+        _debug('simq03b_api: prepare ESR')
+        # Not directly used yet
+        
+    def prepare_for_Rabi(self):
+        """
+        Prepare the signal generator for Rabi:
+            Put in fixed mode, modulate the frequency, etc. 
+        """
+        _debug('simq03b_api: prepare for Rabi')
+        # Not directly used yet
 
 class fake_api():
     """

@@ -161,7 +161,7 @@ class GUIMainExperiment(egg.gui.Window):
      
 if __name__ == '__main__':
     
-    import api_fpga 
+    import api_fpga as _fc
     
     _debug_enabled     = True
     gui_pulser._debug_enabled = True
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     gui_magnet._debug_enabled = False
     import gui_confocal_optimizer
     gui_confocal_optimizer._debug_enabled = True
-    api_fpga.debug_enabled = False
+    _fc.debug_enabled = False
     
     print('Hey on es-tu bin en coton-watte')
     
@@ -180,9 +180,8 @@ if __name__ == '__main__':
     bitfile_path = infos.headers['FPGA_bitfile_path']
     resource_num = infos.headers['FPGA_resource_number']
     # Get the fpga API
-    fpga = api_fpga.FPGA_api(bitfile_path, resource_num) 
+    fpga = _fc.FPGA_api(bitfile_path, resource_num) 
     fpga.open_session()
-    
     
     self = GUIMainExperiment(fpga)
     self.show()

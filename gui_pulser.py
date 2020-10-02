@@ -139,9 +139,14 @@ class GuiMainPulseSequence(egg.gui.Window):
         # Place tabs
         ########################
         # Declare the object that we gonna use
+        # The builder (work in progress lol) of pulse sequence
         self.gui_pulse_builder = GUIPulseBuilder()
+        # Two signal generator
         self.sig_gen = gui_signal_generator.GUISignalGenerator('Anana',show=False)
         self.gui_sig_gen    = self.sig_gen.window       
+        self.sig_gen_second = gui_signal_generator.GUISignalGenerator('Anana second',show=False)
+        self.gui_sig_gen_second    = self.sig_gen_second.window    
+        # For the pulse sequences 
         self.gui_predefined = GUIPredefined(self.fpga)
         self.gui_ESR        = GUIESR()
         self.gui_Rabi       = GUIRabi()
@@ -160,8 +165,12 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.tab_sequence.place_object(self.gui_pulse_builder, alignment=0)
         
         # Tab for the signal generator
+        # The first
         self.tab_sig_gen = self.tabs1.add_tab('Signal Generator')
         self.tab_sig_gen.place_object(self.gui_sig_gen)
+        # The second
+        self.tab_sig_gen_second = self.tabs1.add_tab('Signal Generator 2')
+        self.tab_sig_gen_second.place_object(self.gui_sig_gen_second)
 
         # Tab for the predefined experiment
         self.tab_predef = self.tabs1.add_tab('predefined\nexperiments')
@@ -605,14 +614,24 @@ class GuiMainPulseSequence(egg.gui.Window):
         
         # Prepare the signal generator only if we want.
         if self.gui_pulse_calibration.treeDic_settings['DIO_pulse_modulation_1']>=0:
-            self.P    = self.gui_pulse_calibration.treeDic_settings['Power']
-            self.f    = self.gui_pulse_calibration.treeDic_settings['Frequency']
+            self.P1    = self.gui_pulse_calibration.treeDic_settings['Power1']
+            self.f1    = self.gui_pulse_calibration.treeDic_settings['Frequency1']
             
             # Prepare the signal generator for the specific sequence
             self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
-            self.sig_gen.number_dbm      .set_value(self.P)
-            self.sig_gen.number_frequency.set_value(self.f*1e9 )#Convert into Hz
+            self.sig_gen.number_dbm      .set_value(self.P1)
+            self.sig_gen.number_frequency.set_value(self.f1*1e9 )#Convert into Hz
             self.sig_gen.api.prepare_for_Rabi() # It fiex mode plus RF modulated, like Rabi
+        if self.gui_pulse_calibration.treeDic_settings['DIO_pulse_modulation_2']>=0:
+            self.P2    = self.gui_pulse_calibration.treeDic_settings['Power2']
+            self.f2    = self.gui_pulse_calibration.treeDic_settings['Frequency2']
+            
+            # Prepare the signal generator for the specific sequence
+            self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
+            self.sig_gen.number_dbm      .set_value(self.P2)
+            self.sig_gen.number_frequency.set_value(self.f2*1e9 )#Convert into Hz
+            self.sig_gen.api.prepare_for_Rabi() # It fiex mode plus RF modulated, like Rabi
+
         
         # Overird the method to be called after each loop
         self.after_one_loop = self.gui_pulse_calibration.after_one_loop   
@@ -681,7 +700,22 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.gui_pulse_builder.button_set_delays.click()
         
         # Prepare the setting for the signal generator
-        #TODO do it !
+        self.P1    = self.gui_T1_probeOneTime.treeDic_settings['Power1']
+        self.f1    = self.gui_T1_probeOneTime.treeDic_settings['Frequency1']
+        self.P2    = self.gui_T1_probeOneTime.treeDic_settings['Power2']
+        self.f2    = self.gui_T1_probeOneTime.treeDic_settings['Frequency2']
+        
+        # Prepare the signal generator for the specific sequence
+        # The first signal generator
+        self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
+        self.sig_gen.number_dbm      .set_value(self.P1)
+        self.sig_gen.number_frequency.set_value(self.f1*1e9 )#Convert into Hz
+        self.sig_gen.api.prepare_for_Rabi()
+        # The second signal generator
+        self.sig_gen_second.combo_mode.set_value(index=0) # Set in Fixed mode
+        self.sig_gen_second.number_dbm      .set_value(self.P2)
+        self.sig_gen_second.number_frequency.set_value(self.f2*1e9 )#Convert into Hz
+        self.sig_gen_second.api.prepare_for_Rabi()        
         
         # Overird the method to be called after each loop
         self.after_one_loop = self.gui_T1_probeOneTime.after_one_loop   
@@ -2288,15 +2322,22 @@ class GUICalibration(egg.gui.Window):
                                             bounds=[0, None], suffix=' us',
                                             tip='Time at which we stop to read') 
  
-        self.treeDic_settings.add_parameter('Power', 10, 
+        self.treeDic_settings.add_parameter('Power1', 10, 
                                             type='float', step=1, 
                                             bounds=[-50,30], suffix=' dBm',
-                                            tip='Constant power of the first RF')
-        self.treeDic_settings.add_parameter('Frequency', 3.01, 
+                                            tip='Constant power of the first RF for the first RF signal')
+        self.treeDic_settings.add_parameter('Frequency1', 3.01, 
                                             type='float', step=0.1, 
                                             bounds=[0,10], suffix=' GHz',
-                                            tip='Frequency of the first RF')   
-        
+                                            tip='Frequency of the first RF for the first RF signal')   
+        self.treeDic_settings.add_parameter('Power2', 10, 
+                                            type='float', step=1, 
+                                            bounds=[-50,30], suffix=' dBm',
+                                            tip='Constant power of the first RF for the second RF signal')
+        self.treeDic_settings.add_parameter('Frequency2', 3.01, 
+                                            type='float', step=0.1, 
+                                            bounds=[0,10], suffix=' GHz',
+                                            tip='Frequency of the first RF for the second RF signal')          
         
         self.treeDic_settings.add_parameter('DIO_pulse_modulation_1', 3, 
                                             type='int', step=1, 
@@ -4028,14 +4069,22 @@ class GUIT1probeOneTime(egg.gui.Window):
         self.treeDic_settings = egg.gui.TreeDictionary(autosettings_path='setting_T1_singleTime')
         self.place_object(self.treeDic_settings, row=2, column=0)
 
-        self.treeDic_settings.add_parameter('Power', -20, 
+        self.treeDic_settings.add_parameter('Power1', -20, 
                                             type='float', step=1, 
                                             bounds=[-50,30], suffix=' dBm',
-                                            tip='Constant power of the RF')
-        self.treeDic_settings.add_parameter('Frequency', 3, 
+                                            tip='Constant power of the RF for the first pipulse')
+        self.treeDic_settings.add_parameter('Frequency1', 3, 
                                             type='float', step=0.1, 
                                             bounds=[0,10], suffix=' GHz',
-                                            tip='Frequency of the RF') 
+                                            tip='Frequency of the RF for the first pipulse') 
+        self.treeDic_settings.add_parameter('Power2', -20, 
+                                            type='float', step=1, 
+                                            bounds=[-50,30], suffix=' dBm',
+                                            tip='Constant power of the RF for the second pipulse')
+        self.treeDic_settings.add_parameter('Frequency2', 3, 
+                                            type='float', step=0.1, 
+                                            bounds=[0,10], suffix=' GHz',
+                                            tip='Frequency of the RF for the second pipulse') 
         
         self.treeDic_settings.add_parameter('t_probe', 10, 
                                             type='float', step=0.1, 
@@ -4347,7 +4396,6 @@ if __name__ == '__main__':
     # Get the fpga API
     fpga = _fc.FPGA_api(bitfile_path, resource_num) 
     fpga.open_session()
-    
     
     import gui_confocal_optimizer
     optimizer = gui_confocal_optimizer.GUIOptimizer(fpga)
