@@ -10,6 +10,7 @@ API for controlling the fpga
 
 from nifpga.session import Session
 import numpy as np
+from converter import Converter # For converting the pattern for counting
 
 import traceback
 _p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
@@ -58,6 +59,7 @@ class FPGA_api():
         
         # Magic number for converting voltage into bits for the AOs
         self.bit_per_volt = 3276.8 
+        self.tickDuration=1/120 # Duration of a tick of the fpga. In us. 
         
         
     def open_session(self):
@@ -206,6 +208,70 @@ class FPGA_api():
         else:
             self.wait.write(wait_time_us)
             
+    def prepare_counting_pulse(self, count_time_ms, nb_ticks_dead=120):
+        """
+        Prepare a pulse sequence that consist only of counting. 
+        
+        count_time_ms:
+            Counting time (in ms)
+        nb_ticks_dead:
+            (int) Number of tick for which all the DIO are off before and after 
+            the pulse sequence. In Labview, when counting, it is set to 120. 
+        """
+        _debug('FPGA_api: prepare_counting_pulse')
+        
+        
+        # Not in Count Each Tick mode. 
+        self.set_counting_mode(False)
+        
+        # Create the data array for counting
+        # Prepare DIO1 in state 1
+        self.fpga.prepare_DIOs([1], [1]) 
+        # Get the actual DIOs, because there might be other DIOs open.
+        self.dio_states = self.get_DIO_states() 
+        # Convert the instruction into the data array
+        conver = Converter(tickDuration = self.tickDuration) # Load the converter object.
+        nb_ticks = count_time_ms*1e3/(self.tickDuration)
+        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
+        
+         # Send the data_array to the FPGA
+        self.fpga.prepare_pulse(self.data_array)
+        
+    def prepare_pulse(self, data_array, is_zero_ending=True, list_DIO_state=[] ):
+        """
+        Prepare the data array for the pulse pattern in the fpga. 
+        
+        Input:
+            data_array
+            list of FPGA instruction (list of int32)        
+            
+        is_zero_ending:
+            If ture, append a ticks at the beggining and at the end where all
+            DIOs are zeros. 
+            
+        list_DIO_state:
+            If the lenght is 16, it's gonna record the DIO states to be this list. 
+            That is useful for keeping track of which state are on and off when 
+            the object is shared between other objects (like gui). 
+            Otherwise it can be ignored.
+        """
+        _debug('FPGA_api: prepare_pulse')
+        
+        if is_zero_ending:
+            # Need to add zeros at the beggining and at the end for the caprice of FPGA for pulse sequences
+            # Actually, some FPGA needs more thant one tick off, so let's put 120 ticks like in Labview. 
+            d = np.concatenate(([120], data_array,[120])) 
+            self.data = np.array(d, dtype='int32') # Data to write to fpga
+        else:
+            self.data = np.array(data_array, dtype='int32') # Data to write to fpga
+            
+        if len(list_DIO_state)==16:
+            self.list_DIO_states = list_DIO_state
+        
+        # Configuring FIFO sizes
+        self.configure_fifo()
+        
+        _debug('ht_fifo datatype: ', self.ht_fifo.datatype)                  
         
         
     def set_counting_mode(self, boolean):
@@ -345,40 +411,7 @@ class FPGA_api():
         self.ht_fifo.stop()
         self.th_fifo.stop()        
     
-    def prepare_pulse(self, data_array, is_zero_ending=True, list_DIO_state=[] ):
-        """
-        Prepare the data array for the pulse pattern in the fpga. 
-        
-        Input:
-            data_array
-            list of FPGA instruction (list of int32)        
-            
-        is_zero_ending:
-            If ture, append a ticks at the beggining and at the end where all
-            DIOs are zeros. 
-            
-        list_DIO_state:
-            If the lenght is 16, it's gonna record the DIO states to be this list. 
-            That is useful for keeping track of which state are on and off when 
-            the object is shared between other objects (like gui). 
-            Otherwise it can be ignored.
-        """
-        _debug('FPGA_api: prepare_pulse')
-        
-        if is_zero_ending:
-            # Need to add zeros at the beggining and at the end for the caprice of FPGA for pulse sequences
-            d = np.concatenate(([1], data_array,[1])) 
-            self.data = np.array(d, dtype='int32') # Data to write to fpga
-        else:
-            self.data = np.array(data_array, dtype='int32') # Data to write to fpga
-            
-        if len(list_DIO_state)==16:
-            self.list_DIO_states = list_DIO_state
-        
-        # Configuring FIFO sizes
-        self.configure_fifo()
-        
-        _debug('ht_fifo datatype: ', self.ht_fifo.datatype)      
+
         
       
     def lets_go_FPGA(self):
@@ -909,10 +942,11 @@ def plot_counts_vs_block(counts, repetition, nb_block):
 if __name__=="__main__":
     _debug_enabled                = True
 
-    # Send that to the FPGA
-    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
-                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
-    resource_num = "RIO0"     
+    # Get the fpga paths and ressource number
+    import spinmob as sm
+    infos = sm.data.load('cpu_specifics.dat')
+    bitfile_path = infos.headers['FPGA_bitfile_path']
+    resource_num = infos.headers['FPGA_resource_number']
     
     self = FPGA_api(bitfile_path, resource_num) # Create the api
     # Open it
