@@ -14,8 +14,6 @@ from spinmob import egg
 import traceback
 _p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
 
-
-from converter import Converter # For converting the pattern for counting
 import sound
 
 import time
@@ -199,7 +197,7 @@ class GUICounts(egg.gui.Window):
         """
         _debug('GUICounts: run_take_counts')
         
-        # Prepare the fpga
+        # Prepare the acquisition
         self.prepare_acquisition()
         
         # Do the things
@@ -257,22 +255,26 @@ class GUICounts(egg.gui.Window):
         Prepare the acquisition of counts. 
         """
         _debug('GUICounts: prepare_acquisition')
-
-        # Set the fpga NOT in each tick mode
-        self.fpga.set_counting_mode(False)
+        # Put 120 tick off, because Labview also put 120 ticks off (=1us)
+        self.fpga.prepare_counting_pulse(self.count_time_ms, nb_ticks_off=120)
         
-        # Create the data array from counting
-        # Prepare DIO1 in state 1
-        self.fpga.prepare_DIOs([1], [1]) 
-        # Get the actual DIOs, because there might be other DIOs open.
-        self.dio_states = self.fpga.get_DIO_states() 
-        # Convert the instruction into the data array
-        conver = Converter() # Load the converter object.
-        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
-        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
-        
-         # Send the data_array to the FPGA
-        self.fpga.prepare_pulse(self.data_array)
+#TODO remove the folowing comments if everything works fine
+#
+#        # Set the fpga NOT in each tick mode
+#        self.fpga.set_counting_mode(False)
+#        
+#        # Create the data array from counting
+#        # Prepare DIO1 in state 1
+#        self.fpga.prepare_DIOs([1], [1]) 
+#        # Get the actual DIOs, because there might be other DIOs open.
+#        self.dio_states = self.fpga.get_DIO_states() 
+#        # Convert the instruction into the data array
+#        conver = Converter() # Load the converter object.
+#        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
+#        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
+#        
+#         # Send the data_array to the FPGA
+#        self.fpga.prepare_pulse(self.data_array)
 
     def event_fpga_change(self):
         """

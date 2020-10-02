@@ -208,13 +208,13 @@ class FPGA_api():
         else:
             self.wait.write(wait_time_us)
             
-    def prepare_counting_pulse(self, count_time_ms, nb_ticks_dead=120):
+    def prepare_counting_pulse(self, count_time_ms, nb_ticks_off=120):
         """
         Prepare a pulse sequence that consist only of counting. 
         
         count_time_ms:
             Counting time (in ms)
-        nb_ticks_dead:
+        nb_ticks_off:
             (int) Number of tick for which all the DIO are off before and after 
             the pulse sequence. In Labview, when counting, it is set to 120. 
         """
@@ -226,7 +226,7 @@ class FPGA_api():
         
         # Create the data array for counting
         # Prepare DIO1 in state 1
-        self.fpga.prepare_DIOs([1], [1]) 
+        self.prepare_DIOs([1], [1]) 
         # Get the actual DIOs, because there might be other DIOs open.
         self.dio_states = self.get_DIO_states() 
         # Convert the instruction into the data array
@@ -235,9 +235,9 @@ class FPGA_api():
         self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
         
          # Send the data_array to the FPGA
-        self.fpga.prepare_pulse(self.data_array)
+        self.prepare_pulse(self.data_array, nb_ticks_off=nb_ticks_off)
         
-    def prepare_pulse(self, data_array, is_zero_ending=True, list_DIO_state=[] ):
+    def prepare_pulse(self, data_array, nb_ticks_off=1, list_DIO_state=[] ):
         """
         Prepare the data array for the pulse pattern in the fpga. 
         
@@ -245,9 +245,11 @@ class FPGA_api():
             data_array
             list of FPGA instruction (list of int32)        
             
-        is_zero_ending:
-            If ture, append a ticks at the beggining and at the end where all
-            DIOs are zeros. 
+        nb_ticks_off:
+            (int) If higher than zero, how many tick to put all DIO off before
+            and after the entire pulse sequence. This is important sometime 
+            for the caprice of the FPGA. Especially if the fifo is slow to 
+            throw out it memory, or if the first or last step is counting. 
             
         list_DIO_state:
             If the lenght is 16, it's gonna record the DIO states to be this list. 
@@ -257,12 +259,13 @@ class FPGA_api():
         """
         _debug('FPGA_api: prepare_pulse')
         
-        if is_zero_ending:
-            # Need to add zeros at the beggining and at the end for the caprice of FPGA for pulse sequences
-            # Actually, some FPGA needs more thant one tick off, so let's put 120 ticks like in Labview. 
-            d = np.concatenate(([120], data_array,[120])) 
+        if nb_ticks_off>0:
+            # Add all DIO state to be off ticks at the start and end of the 
+            # sequence. 
+            d = np.concatenate(([nb_ticks_off], data_array,[nb_ticks_off])) 
             self.data = np.array(d, dtype='int32') # Data to write to fpga
         else:
+            # Just take the data array as it is
             self.data = np.array(data_array, dtype='int32') # Data to write to fpga
             
         if len(list_DIO_state)==16:
@@ -271,7 +274,7 @@ class FPGA_api():
         # Configuring FIFO sizes
         self.configure_fifo()
         
-        _debug('ht_fifo datatype: ', self.ht_fifo.datatype)                  
+        _debug('FPGA_api: prepare_pulse: ht_fifo datatype: ', self.ht_fifo.datatype)                  
         
         
     def set_counting_mode(self, boolean):
