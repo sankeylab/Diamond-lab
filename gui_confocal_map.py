@@ -523,24 +523,37 @@ class GUIMap(egg.gui.Window):
         
         It prepare the pulse pattern and set the wait time. 
         """
-        _debug('GUICounts: prepare_acquisition')
-        # Create the data array from counting
-        # Prepare DIO1 in state 1
-        self.fpga.prepare_DIOs([1], [1]) 
-        # Get the actual DIOs, because there might be other DIOs open.
-        self.dio_states = self.fpga.get_DIO_states() 
-        # Convert the instruction into the data array
-        conver = Converter() # Load the converter object.
-        self.count_time_ms = self.treeDic_settings['Count_time']
-        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
-        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
+        _debug('GUIMap: prepare_acquisition')
         
+#TODO remove the commented code if everything works fine
+#        # Create the data array from counting
+#        # Prepare DIO1 in state 1
+#        self.fpga.prepare_DIOs([1], [1]) 
+#        # Get the actual DIOs, because there might be other DIOs open.
+#        self.dio_states = self.fpga.get_DIO_states() 
+#        # Convert the instruction into the data array
+#        conver = Converter() # Load the converter object.
+
         # Update the wait time
         wait_AO_time = self.treeDic_settings['Wait_after_AOs']
-        self.fpga.prepare_wait_time(wait_AO_time)
+        self.fpga.prepare_wait_time(wait_AO_time)        
         
-         # Send the data_array to the FPGA
-        self.fpga.prepare_pulse(self.data_array)
+        # Prepare the pulse sequence of the fpga
+        # Get the right counting time
+        self.count_time_ms = self.treeDic_settings['Count_time']
+        # Put 120 tick off, because Labview also put 120 ticks off (=1us)
+        self.fpga.prepare_counting_pulse(self.count_time_ms, nb_ticks_off=120)
+
+        
+        
+        
+#        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
+#        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
+#        
+#
+#        
+#         # Send the data_array to the FPGA
+#        self.fpga.prepare_pulse(self.data_array)
 
     def match_attributes_with_gui(self):
         """
@@ -1323,12 +1336,15 @@ if __name__ == '__main__':
     
     print('Hey on es-tu bin en coton-watte')
     
-     # Create the fpga api
-    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
-                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
-    resource_num = "RIO0"     
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+    # Get the fpga paths and ressource number
+    import spinmob as sm
+    infos = sm.data.load('cpu_specifics.dat')
+    bitfile_path = infos.headers['FPGA_bitfile_path']
+    resource_num = infos.headers['FPGA_resource_number']
+    # Get the fpga API
+    fpga = _fc.FPGA_api(bitfile_path, resource_num) 
     fpga.open_session()
+
     
     
     self = GUIMap(fpga)

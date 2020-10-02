@@ -203,8 +203,7 @@ class GUICounts(egg.gui.Window):
         # Do the things
         # Allow the GUI to update. This is important to avoid freezing of the GUI inside loops
         self.process_events()    
-        
-        
+        # Get the elapsed time for the x-axis        
         self.dt += time.time() - self.time_last_run # Time elapsed since last run
         self.elapsed_time = time.time() - self.t0 - self.dt
         
@@ -237,8 +236,6 @@ class GUICounts(egg.gui.Window):
                 self.Hz = self.alpha*self.frange + self.fmin
                 self.sound.play_wobble(self.Hz, 0.5, duration=self.count_time_ms/1000)
             
-            
-            
         # Note what time it is for substracting the x-axis in the next run
         self.time_last_run = time.time()
             
@@ -258,24 +255,6 @@ class GUICounts(egg.gui.Window):
         # Put 120 tick off, because Labview also put 120 ticks off (=1us)
         self.fpga.prepare_counting_pulse(self.count_time_ms, nb_ticks_off=120)
         
-#TODO remove the folowing comments if everything works fine
-#
-#        # Set the fpga NOT in each tick mode
-#        self.fpga.set_counting_mode(False)
-#        
-#        # Create the data array from counting
-#        # Prepare DIO1 in state 1
-#        self.fpga.prepare_DIOs([1], [1]) 
-#        # Get the actual DIOs, because there might be other DIOs open.
-#        self.dio_states = self.fpga.get_DIO_states() 
-#        # Convert the instruction into the data array
-#        conver = Converter() # Load the converter object.
-#        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
-#        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
-#        
-#         # Send the data_array to the FPGA
-#        self.fpga.prepare_pulse(self.data_array)
-
     def event_fpga_change(self):
         """
         Dummy function to be overrid. 
