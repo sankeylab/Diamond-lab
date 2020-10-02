@@ -16,9 +16,6 @@ from spinmob import egg
 import traceback
 _p = traceback.print_last #Very usefull command to use for getting the last-not-printed error
 
-
-from converter import Converter # For converting the pattern for counting
-
 # Debug stuff.
 _debug_enabled     = False
 
@@ -185,25 +182,27 @@ class GUIOptimizer(egg.gui.Window):
         """
         _debug('GUIOptimizer: prepare_acquisition')
         
-        # Set the fpga NOT in each tick mode
-        self.fpga.set_counting_mode(False)
-        
-        # Create the data array from counting
-        # Prepare DIO1 in state 1
-        self.fpga.prepare_DIOs([1], [1]) 
-        # Get the actual DIOs, because there might be other DIOs open.
-        self.dio_states = self.fpga.get_DIO_states() 
-        # Convert the instruction into the data array
-        conver = Converter() # Load the converter object.
-        self.count_time_ms = self.treeDic_settings['Usual/Count_time']
-        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
-        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
+#TODO remove the following commentted code if everything works fine
+#        # Set the fpga NOT in each tick mode
+#        self.fpga.set_counting_mode(False)
+#        
+#        # Create the data array from counting
+#        # Prepare DIO1 in state 1
+#        self.fpga.prepare_DIOs([1], [1]) 
+#        # Get the actual DIOs, because there might be other DIOs open.
+#        self.dio_states = self.fpga.get_DIO_states() 
+#        # Convert the instruction into the data array
+#        conver = Converter() # Load the converter object.
+#        self.count_time_ms = self.treeDic_settings['Usual/Count_time']
+#        nb_ticks = self.count_time_ms*1e3/(conver.tickDuration)
+#        self.data_array = conver.convert_into_int32([(nb_ticks, self.dio_states)])
         
         # Upate the waiting time
         self.fpga.prepare_wait_time(self.wait_after_AOs_us)
-        
-         # Send the data_array to the FPGA
-        self.fpga.prepare_pulse(self.data_array)
+
+        self.count_time_ms = self.treeDic_settings['Usual/Count_time']        
+        # Put 120 tick off, because Labview also put 120 ticks off (=1us)
+        self.fpga.prepare_counting_pulse(self.count_time_ms, nb_ticks_off=120)
         
         # Call the event to say "hey, stuff changed on the fpga"
         self.event_fpga_change()        
