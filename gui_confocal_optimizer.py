@@ -171,7 +171,9 @@ class GUIOptimizer(egg.gui.Window):
         self.tab_track.place_object(self.databoxplot_pos_y, row=2, column=1)  
         self.tab_track.place_object(self.databoxplot_pos_z, row=3, column=1)  
         
-        
+        # Make a label for showing the statut
+        self.label_statut = egg.gui.Label('We have the best optimzer on the market.')
+        self.place_object(self.label_statut, row=2, column=3)           
     
     def prepare_acquisition_pulse(self):
         """
@@ -454,6 +456,11 @@ class GUIOptimizer(egg.gui.Window):
         Run the optimization procedure.
         """
         _debug('GUIOptimizer: run_optimizing') 
+
+        # Update the statut
+        text = (  'Statut:\nPreparing the optimization.')
+        self.label_statut.set_text(text)
+
         
         # Steal the AOs information of x,y,z from the map
         self.steal_AO_info()
@@ -463,8 +470,11 @@ class GUIOptimizer(egg.gui.Window):
 
         # Prepare the pulse sequence for getting the counts
         self.prepare_acquisition_pulse()
-        
         # Optimize the X direction
+        # Update the statut
+        text = (  'Statut:\nOptimizing X')
+        self.label_statut.set_text(text)
+        # Note the corresponding AO
         self.AO = self.AOx
         # The center voltage will be the actual voltage
         self.V0 = self.fpga.get_AO_voltage(self.AO) 
@@ -482,6 +492,10 @@ class GUIOptimizer(egg.gui.Window):
             
         
         # Optimize the Y direction
+        # Update the statut
+        text = (  'Statut:\nOptimizing Y')
+        self.label_statut.set_text(text)
+        # Note the corresponding AO
         self.AO = self.AOy
         # The center voltage will be the actual voltage
         self.V0 = self.fpga.get_AO_voltage(self.AO)
@@ -498,6 +512,10 @@ class GUIOptimizer(egg.gui.Window):
             self.update_plot_position('y')
 
         # Optimize the Z direction
+        # Update the statut
+        text = (  'Statut:\nOptimizing Z')
+        self.label_statut.set_text(text)
+        # Note the corresponding AO
         self.AO = self.AOz
         # The center voltage will be the actual voltage
         self.V0 = self.fpga.get_AO_voltage(self.AO)        
@@ -519,6 +537,10 @@ class GUIOptimizer(egg.gui.Window):
 
         # Important: Remove the offsets
         self.offset_remove_them()
+
+        # Update the statut
+        text = (  'Statut:\nDone.')
+        self.label_statut.set_text(text)
         
     def update_plot_fit(self, plot):
         """
@@ -628,11 +650,13 @@ if __name__ == '__main__':
     
     print('Hey on es-tu bin en coton-watte')
     
-     # Create the fpga api
-    bitfile_path = ("X:\DiamondCloud\Magnetometry\Acquisition\FPGA\Magnetometry Control\FPGA Bitfiles"
-                    "\Pulsepattern(bet_FPGATarget_FPGAFULLV2_WZPA4vla3fk.lvbitx")
-    resource_num = "RIO0"     
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) # Create the api   
+    # Get the fpga paths and ressource number
+    import spinmob as sm
+    infos = sm.data.load('cpu_specifics.dat')
+    bitfile_path = infos.headers['FPGA_bitfile_path']
+    resource_num = infos.headers['FPGA_resource_number']
+    # Get the fpga API
+    fpga = _fc.FPGA_api(bitfile_path, resource_num) 
     fpga.open_session()
     
     self = GUIOptimizer(fpga)
