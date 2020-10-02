@@ -255,7 +255,7 @@ class GUIOptimizer(egg.gui.Window):
 
     def button_set_r_opt_clicked(self):
         """
-        Note the osition to optimize
+        Note the position to optimize
         """
         _debug('GUIOptimizer: button_set_r_opt_clicked')
 
@@ -318,8 +318,8 @@ class GUIOptimizer(egg.gui.Window):
         # gonna be the counter. 
         self.fpga.lets_go_FPGA()
         
-        # Call the event to say "hey, stuff changed on the fpga"
-        self.event_fpga_change()          
+        #TODO Remove this. Because The fpga will change anyway later. 
+#        self.event_fpga_change()          
 
     def offset_remove_them(self):
         """
@@ -448,7 +448,8 @@ class GUIOptimizer(egg.gui.Window):
         self.AOy = self.treeDict_map['AO_y']
         self.AOz = self.treeDict_map['AO_z']
         self.wait_after_AOs_us = int(self.treeDict_map['Wait_after_AOs'])
-        _debug(self.AOx, self.AOy, self.AOz, self.wait_after_AOs_us)
+        _debug('GUIOptimizer: steal_AO_info: ', 
+               self.AOx, self.AOy, self.AOz, self.wait_after_AOs_us)
                
         
     def run_optimizing(self):
@@ -464,9 +465,21 @@ class GUIOptimizer(egg.gui.Window):
         
         # Steal the AOs information of x,y,z from the map
         self.steal_AO_info()
+
+        if _debug_enabled:
+            # Verifye the voltages. 
+            for i in [self.AOx,self.AOy, self.AOz]:
+                V = self.fpga.get_AO_voltage(i)
+                print('GUIOptimizer: run_optimizing before offset V_%d'%i, V)   
         
         # Put the offsets
         self.offset_put_them()
+        
+        if _debug_enabled:
+            # Verifye the voltages. 
+            for i in [self.AOx,self.AOy, self.AOz]:
+                V = self.fpga.get_AO_voltage(i)
+                print('GUIOptimizer: run_optimizing after offset V_%d'%i, V)            
 
         # Prepare the pulse sequence for getting the counts
         self.prepare_acquisition_pulse()
@@ -530,7 +543,9 @@ class GUIOptimizer(egg.gui.Window):
             # Update the plots 
             self.update_plot_fit(self.plot_fit_z)
             self.update_plot_position('z')
-        
+
+ 
+                
         if self.is_optimizing:
             # Will stop optimizing and uptage the button
             self.button_optimize_clicked()
@@ -541,6 +556,12 @@ class GUIOptimizer(egg.gui.Window):
         # Update the statut
         text = (  'Statut:\nDone.')
         self.label_statut.set_text(text)
+
+        if _debug_enabled:
+            # Verifye the voltages. 
+            for i in [self.AOx,self.AOy, self.AOz]:
+                V = self.fpga.get_AO_voltage(i)
+                print('GUIOptimizer: run_optimizing after removing offset V_%d'%i, V)  
         
     def update_plot_fit(self, plot):
         """

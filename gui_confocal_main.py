@@ -216,6 +216,9 @@ if __name__ == '__main__':
 
     self = GUIMainConfocal(fpga)
     self.show()
+    
+    # for testing the gui not embeded
+    
 
 #    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
 #    fpga_fake.open_session()
