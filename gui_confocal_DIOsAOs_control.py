@@ -120,48 +120,50 @@ class GUIDIOsAOsControl(egg.gui.Window):
         DIOs and the AOs on the settings
         """
         _debug('GUIDIOsAOsControl: update_fpga')
-
-        # Get the list of the state of each DIOs
-        self.list_DIO_states = []
-        for radioButton in self.radioButton_DIOs:
-            self.list_DIO_states.append(int(radioButton.isChecked()))  
         
-        # Get the voltage of the AOs from the tree dictionary
-        self.list_AO_voltages = []
-        for i in range(8):
-            key = 'AO_%d/Voltage'%i
-            self.list_AO_voltages.append(self.treeDict_AOs[key])
+        # Put all that in a big if. 
+        # Because we don't want the fpga to update if we are just updating the 
+        # apparence of the gui widgets. 
+        if not(self.is_updating_gui_with_fpga):  
+            # Get the list of the state of each DIOs
+            self.list_DIO_states = []
+            for radioButton in self.radioButton_DIOs:
+                self.list_DIO_states.append(int(radioButton.isChecked()))  
             
-        # Get the new data array
-        # For each data in the fpga data array, adjust the DIOs
-        self.conver = Converter() # Load the converter object.
-        self.old_datas = self.fpga.get_data_array()
-        self.new_datas = [] # New data array 
-        for self.old_data in self.old_datas:
-            # First note the previous tivks and DIO state
-            out = self.conver.int32_to_ticks_and_DIOs(int(self.old_data))
-            self.ticks, self.old_DIO_states = out
-            # Add or modifye the actual DIOs state
-            self.new_DIO_states = self.old_DIO_states
-            self.new_DIO_states[self.list_DIOs] = self.list_DIO_states
+            # Get the voltage of the AOs from the tree dictionary
+            self.list_AO_voltages = []
+            for i in range(8):
+                key = 'AO_%d/Voltage'%i
+                self.list_AO_voltages.append(self.treeDict_AOs[key])
+                
+            # Get the new data array
+            # For each data in the fpga data array, adjust the DIOs
+            self.conver = Converter() # Load the converter object.
+            self.old_datas = self.fpga.get_data_array()
+            self.new_datas = [] # New data array 
+            for self.old_data in self.old_datas:
+                # First note the previous tivks and DIO state
+                out = self.conver.int32_to_ticks_and_DIOs(int(self.old_data))
+                self.ticks, self.old_DIO_states = out
+                # Add or modifye the actual DIOs state
+                self.new_DIO_states = self.old_DIO_states
+                self.new_DIO_states[self.list_DIOs] = self.list_DIO_states
+                
+                self.new_data = self.conver.single_pulse_to_fpga(self.ticks, self.new_DIO_states)
+                self.new_datas.append(self.new_data)
+                            
+    
+            # Prepare the fpga with the values    
+            self.fpga.prepare_AOs(self.list_AOs, self.list_AO_voltages)
+            self.fpga.prepare_pulse(self.new_datas, 
+                                    nb_ticks_off=0,
+                                    list_DIO_state = self.new_DIO_states)            
+            self.fpga.prepare_wait_time(self.fpga.get_wait_time_us()) 
             
-            self.new_data = self.conver.single_pulse_to_fpga(self.ticks, self.new_DIO_states)
-            self.new_datas.append(self.new_data)
-                        
-
-        # Prepare the fpga with the values    
-        self.fpga.prepare_AOs(self.list_AOs, self.list_AO_voltages)
-        self.fpga.prepare_pulse(self.new_datas, 
-                                nb_ticks_off=0,
-                                list_DIO_state = self.new_DIO_states)            
-        self.fpga.prepare_wait_time(self.fpga.get_wait_time_us()) 
+            # Run the FPGA with all these settings
+            self.fpga.lets_go_FPGA()  
         
-        # Run the FPGA with all these settings
-        self.fpga.lets_go_FPGA()  
-        
-        # Call the event to say "hey, stuff changed on the fpga"
-        if not(self.is_updating_gui_with_fpga):
-            # Call it only if we are not updating the gui with the fpga
+            # Call the event to say "hey, stuff changed on the fpga"
             self.event_fpga_change() 
             
     def event_fpga_change(self):

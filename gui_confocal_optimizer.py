@@ -322,9 +322,7 @@ class GUIOptimizer(egg.gui.Window):
         # gonna be the counter. 
         self.fpga.lets_go_FPGA()
         
-        #TODO Remove this. Because The fpga will change anyway later. 
 #        # Call the event to say "hey, stuff changed on the fpga"
-        # Call the event to say "hey, stuff changed on the fpga"
 #        if not(self.is_updating_gui_with_fpga):
 #            # Call it only if we are not updating the gui with the fpga
 #            self.event_fpga_change()               

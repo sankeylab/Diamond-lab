@@ -196,10 +196,10 @@ if __name__ == '__main__':
     import gui_confocal_DIOsAOs_control as cdc
     import gui_confocal_map as cm
     
-    cm._debug_enabled  = False
-    cdc._debug_enabled = False
+    cm._debug_enabled  = True
+    cdc._debug_enabled = True
     co._debug_enabled  = True
-    cc._debug_enabled  = False
+    cc._debug_enabled  = True
     _debug_enabled     = True
     _fc._debug_enabled = False
     
