@@ -168,7 +168,7 @@ if __name__ == '__main__':
     gui_pipulse_optimization._debug_enabled = False
     gui_magnet._debug_enabled = False
     import gui_confocal_optimizer
-    gui_confocal_optimizer._debug_enabled = True
+    gui_confocal_optimizer._debug_enabled = False
     _fc.debug_enabled = False
     
     print('Hey on es-tu bin en coton-watte')
