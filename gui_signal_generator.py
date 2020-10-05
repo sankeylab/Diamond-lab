@@ -424,21 +424,51 @@ class sma100b_api(_mp.visa_tools.visa_api_base):
         if s == None: return None
         return int(s)
 
+
     def prepare_for_ESR(self):
         """
         Prepare the instrument for ESR measurement.
         Set the trigger to be external, pulse modulation, etc. 
-        """    
-        # Not implemented yet
-        return 
-
+        
+        Similar to what is doen in the Labview vi "Host SMIQ Command.vi" 
+        """
+        _debug('sma100b_api: prepare ESR')
+        
+        # Copy-paste the commands in Labview vi "Host SMIQ Command.vi"
+        #This tell to take the pulse External for modulating the output. 
+        self.write('SOURce:PULM:SOURce EXT') 
+        self.write('SOURce:PULM:STATe ON')
+        # Ouput on
+        self.write('OUTP ON') 
+        # This prepares for a list mode with an external trigger
+        self.write('LIST:LEAR')
+        self.write('FREQ:MODE LIST')
+        self.write('LIST:MODE STEP')
+        self.write('TRIG:LIST:SOUR EXT')
+        self.write('SOUR:LIST:IND:START 0')
+        self.write('SOUR:LIST:IND:STOP   ')     
+        # Very important: we unable the display for avoiding glitches
+        self.write('SYSTem:DISPlay:UPDate OFF')
+        # Other things
+        self.write('ABOR')
+        self.write('*RST')
+        self.write('LIST:SEL "New_list"')
+        
     def prepare_for_Rabi(self):
         """
         Prepare the signal generator for Rabi:
             Put in fixed mode, modulate the frequency, etc. 
+            
+        Similar to what is doen in the Labview vi "Host SMIQ Command.vi" 
         """
-        # Not implemented yet
-        return 
+        _debug('sma100b_api: prepare for Rabi')
+        #This tell to take the pulse External for modulating the output. 
+        self.write('SOURce:PULM:SOURce EXT') 
+        self.write('SOURce:PULM:STATe ON')     
+        # This is also done in Labviw
+        self.write('LIST:MODE OFF')
+        self.write('ABOR')
+        self.write('*RST')
     
 
 class smb100a_api(_mp.visa_tools.visa_api_base):    
@@ -667,7 +697,53 @@ class smb100a_api(_mp.visa_tools.visa_api_base):
         s = self.query('SOUR1:LIST:FREQ:POIN?')
         if s == None: return None
         return int(s)
-    
+
+    def prepare_for_ESR(self):
+        """
+        Prepare the instrument for ESR measurement.
+        Set the trigger to be external, pulse modulation, etc. 
+        
+        Similar to what is doen in the Labview vi "Host SMIQ Command.vi" 
+        """
+        _debug('smb100a_api: prepare ESR')
+        
+        # Copy-paste the commands in Labview vi "Host SMIQ Command.vi"
+        #This tell to take the pulse External for modulating the output. 
+        self.write('SOURce:PULM:SOURce EXT') 
+        self.write('SOURce:PULM:STATe ON')
+        # Ouput on
+        self.write('OUTP ON') 
+        # This prepares for a list mode with an external trigger
+        self.write('LIST:LEAR')
+        self.write('FREQ:MODE LIST')
+        self.write('LIST:MODE STEP')
+        self.write('TRIG:LIST:SOUR EXT')
+        self.write('SOUR:LIST:IND:START 0')
+        self.write('SOUR:LIST:IND:STOP   ')     
+        # Very important: we unable the display for avoiding glitches
+        self.write('SYSTem:DISPlay:UPDate OFF')
+        # Other things
+        self.write('ABOR')
+        self.write('*RST')
+        self.write('LIST:SEL "New_list"')
+        
+    def prepare_for_Rabi(self):
+        """
+        Prepare the signal generator for Rabi:
+            Put in fixed mode, modulate the frequency, etc. 
+            
+        Similar to what is doen in the Labview vi "Host SMIQ Command.vi" 
+        """
+        _debug('smb100a_api: prepare for Rabi')
+        #This tell to take the pulse External for modulating the output. 
+        self.write('SOURce:PULM:SOURce EXT') 
+        self.write('SOURce:PULM:STATe ON')     
+        # This is also done in Labviw
+        self.write('LIST:MODE OFF')
+        self.write('ABOR')
+        self.write('*RST')
+
+        
     
 class anapico_api(_mp.visa_tools.visa_api_base):
     """
@@ -913,80 +989,32 @@ class anapico_api(_mp.visa_tools.visa_api_base):
         _debug('Anapico: prepare ESR')
         # This is all for the ANAPICO to use the external trigger. 
         # BONUS for preparing the list with the external trigger. 
-        print('Testing query: ', self.query('*IDN?'))
-        print('Source for Trigger?: ', self.query('TRIG:SEQ:SOUR?'))
+        _debug('Testing query: ', self.query('*IDN?'))
+        _debug('Source for Trigger?: ', self.query('TRIG:SEQ:SOUR?'))
         self.write('TRIG:SEQ:SOUR EXT') # Set the external trigger to ext
-        print('Source for Trigger?: ', self.query('TRIG:SEQ:SOUR?'))
-        print('First frequency?: ', self.query('SOUR:FREQ:STAR?'))
-        print('Last  frequency?: ', self.query('SOUR:FREQ:STOP?'))
+        _debug('Source for Trigger?: ', self.query('TRIG:SEQ:SOUR?'))
+        _debug('First frequency?: ', self.query('SOUR:FREQ:STAR?'))
+        _debug('Last  frequency?: ', self.query('SOUR:FREQ:STOP?'))
         
         # Prepare the list mode
         self.write('SOUR:FREQ:MODE LIST') # Set the frequency mode to list
-        print('Frequency mode ?: ', self.query('SOUR:FREQ:MODE?'))
+        _debug('Frequency mode ?: ', self.query('SOUR:FREQ:MODE?'))
         self.write('SOUR:POW:MODE LIST') # Set the power mode to list
-        print('Power mode ?: ', self.query('SOUR:POW:MODE?'))
+        _debug('Power mode ?: ', self.query('SOUR:POW:MODE?'))
         self.write('SOUR:LIST:MODE AUTO') # Set the list mode to auto
-        print('List mode ?: ', self.query('SOUR:LIST:MODE?'))
+        _debug('List mode ?: ', self.query('SOUR:LIST:MODE?'))
 #        self.api.write('TRIG:SEQ:TYPE GATE') # An external trigger signal repeatedly starts and stops the waveform’s playback.
         self.write('TRIG:SEQ:TYPE POIN')# Upon triggering, only a single point of the sweep (list) is played.
-        print('Trig type?: ', self.query('TRIG:SEQ:TYPE?'))
+        _debug('Trig type?: ', self.query('TRIG:SEQ:TYPE?'))
         
         # Set stuff for the modulation
         self.write('SOUR:PULM:SOUR EXT')# Set the pulse modulation to be external
-        print('Pulse modulation source?: ', self.query('SOUR:PULM:SOUR?'))
+        _debug('Pulse modulation source?: ', self.query('SOUR:PULM:SOUR?'))
         self.write('SOUR:PULM:STAT ON') # Switch the pulse modulation ON
-        print('State of pulse modulation? ', self.query('SOUR:PULM:STAT?'))
+        _debug('State of pulse modulation? ', self.query('SOUR:PULM:STAT?'))
         self.write('SOUR:PULM:POL NORM') # Polarity NORMal, in case it was INVerted
-        print('Polarity of modulation?: ', self.query('SOUR:PULM:POL?'))        
-        # This is all for the ANAPICO to use the external trigger. 
-        # BONUS for preparing the list with the external trigger. 
-#        print('Testing query: ', self.api.query('*IDN?'))
-#        print('Source for Trigger?: ', self.api.query('TRIG:SEQ:SOUR?'))
-#        self.api.write('TRIG:SEQ:SOUR EXT') # Set the external trigger to ext
-#        print('Source for Trigger?: ', self.api.query('TRIG:SEQ:SOUR?'))
-#        print('First frequency?: ', self.api.query('SOUR:FREQ:STAR?'))
-#        print('Last  frequency?: ', self.api.query('SOUR:FREQ:STOP?'))
-#        
-#        self.api.write('SOUR:FREQ:MODE LIST') # Set the frequency mode to list
-#        print('Frequency mode ?: ', self.api.query('SOUR:FREQ:MODE?'))
-#        self.api.write('SOUR:POW:MODE LIST') # Set the power mode to list
-#        print('Power mode ?: ', self.api.query('SOUR:POW:MODE?'))
-#        self.api.write('SOUR:LIST:MODE AUTO') # Set the list mode to auto
-#        print('List mode ?: ', self.api.query('SOUR:LIST:MODE?'))
-##        self.api.write('TRIG:SEQ:TYPE GATE') # An external trigger signal repeatedly starts and stops the waveform’s playback.
-#        self.api.write('TRIG:SEQ:TYPE POIN')# Upon triggering, only a single point of the sweep (list) is played.
-#        print('Trig type?: ', self.api.query('TRIG:SEQ:TYPE?'))
-#        
-#        # Set stuff for the modulation
-#        self.api.write('SOUR:PULM:SOUR EXT')# Set the pulse modulation to be external
-#        print('Pulse modulation source?: ', self.api.query('SOUR:PULM:SOUR?'))
-#        self.api.write('SOUR:PULM:STAT ON') # Switch the pulse modulation ON
-#        print('State of pulse modulation? ', self.api.query('SOUR:PULM:STAT?'))
-#        self.api.write('SOUR:PULM:POL NORM') # Polarity NORMal, in case it was INVerted
-#        print('Polarity of modulation?: ', self.api.query('SOUR:PULM:POL?'))
+        _debug('Polarity of modulation?: ', self.query('SOUR:PULM:POL?'))        
 
-#        self.api.write('SOUR:AM:SOUR EXT')
-#        print('Pulse modulation source?: ', self.api.query('SOUR:AM:SOUR?'))
-#        self.api.write('SOUR:AM:STAT ON') # Switch the pulse modulation ON
-#        print('Sate of pulse modulation? ', self.api.query('SOUR:AM:STAT?'))
-        
-        # Just copy Labview
-#        self.api.write('OUTP ON') # Copy Labview
-#        self.api.write('LIST:LEAR') # Copy Labview
-#        self.api.write('FREQ:MODE LIST') # Copy Labview
-#        self.api.write('LIST:MODE STEP') # Copy Labview
-#        self.api.write('TRIG:LIST:SOUR EXT') # Copy Labview
-#        self.api.write('SOUR:LIST:IND:START 0') # Copy Labview
-#        self.api.write('SOUR:LIST:IND:STOP ') # Copy Labview
-
-        
-#        self.api.write('OUTP ON') # Copy Labview
-#        self.api.write('LIST:LEAR') # Copy Labview
-#        self.api.write('FREQ:MODE LIST') # Copy Labview
-#        self.api.write('LIST:MODE STEP') # Copy Labview
-#        self.api.write('TRIG:LIST:SOUR EXT') # Copy Labview
-#        self.api.write('SOUR:LIST:IND:START 0') # Copy Labview
-#        self.api.write('SOUR:LIST:IND:STOP ') # Copy Labview   
         
     def prepare_for_Rabi(self):
         """
