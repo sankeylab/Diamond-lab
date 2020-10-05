@@ -627,10 +627,10 @@ class GuiMainPulseSequence(egg.gui.Window):
             self.f2    = self.gui_pulse_calibration.treeDic_settings['Frequency2']
             
             # Prepare the signal generator for the specific sequence
-            self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
-            self.sig_gen.number_dbm      .set_value(self.P2)
-            self.sig_gen.number_frequency.set_value(self.f2*1e9 )#Convert into Hz
-            self.sig_gen.api.prepare_for_Rabi() # It fiex mode plus RF modulated, like Rabi
+            self.sig_gen_second.combo_mode.set_value(index=0) # Set in Fixed mode
+            self.sig_gen_second.number_dbm      .set_value(self.P2)
+            self.sig_gen_second.number_frequency.set_value(self.f2*1e9 )#Convert into Hz
+            self.sig_gen_second.api.prepare_for_Rabi() # It fiex mode plus RF modulated, like Rabi
 
         
         # Overird the method to be called after each loop
