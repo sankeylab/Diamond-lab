@@ -729,6 +729,7 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
         self.sig_gen.number_dbm      .set_value(self.P1)
         self.sig_gen.number_frequency.set_value(self.f1*1e9 )#Convert into Hz
+        
         # The second signal generator
         self.sig_gen_second.api.prepare_for_Rabi() # Same setup as Rabi
         #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
@@ -3285,7 +3286,7 @@ class GUIT1TimeTrace2(egg.gui.Window):
         # Note that for saving 
         self.rep = rep
         self.iteration = iteration
-        self.counts_prior_to_process = counts # for debugging
+        self.counts_prior_to_process = counts # Save it for debugging
         
         # Get the counts per readout per block
         self.count_processor = _fc.ProcessFPGACounts(counts)
@@ -4359,6 +4360,7 @@ class GUIT1probeOneTime(egg.gui.Window):
         # Note that for saving 
         self.rep = rep
         self.iteration = iteration
+        self.counts_prior_to_process = counts # Save it for debugging
         
         # Get the counts per readout per block
         self.count_processor = _fc.ProcessFPGACounts(counts)
