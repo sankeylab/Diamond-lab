@@ -363,6 +363,7 @@ class GuiMainPulseSequence(egg.gui.Window):
         # Make the instrumenbt ready for the pulse sequence
         #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
         self.sig_gen.button_reset.click()  # Reset the parameters 
+
         # The method should set the trigger to be external, pulse modulatiion, etc. 
         self.sig_gen.api.prepare_for_ESR()
         

@@ -709,20 +709,25 @@ class smb100a_api(_mp.visa_tools.visa_api_base):
         
         # Copy-paste the commands in Labview vi "Host SMIQ Command.vi"
 
-        # This prepares for a list mode with an external trigger
-        self.write('LIST:LEAR')
-        self.write('FREQ:MODE LIST')
-        self.write('LIST:MODE STEP')
-        self.write('TRIG:LIST:SOUR EXT')
-        self.write('SOUR:LIST:IND:START 0')
-        self.write('SOUR:LIST:IND:STOP')     
-
         # Very important: we unable the display for avoiding glitches
         self.write('SYSTem:DISPlay:UPDate OFF')
         # Other things
         self.write('ABOR')
         self.write('*RST')
         self.write('LIST:SEL "New_list"')
+        
+        
+        # This prepares for a list mode with an external trigger
+        self.write('LIST:LEAR')
+        self.write('FREQ:MODE LIST')
+        self.write('LIST:MODE STEP')
+        self.write('TRIG:LIST:SOUR EXT')
+        self.write('SOUR:LIST:IND:START 0')
+        # Like Labview, set the stop index
+        N = self.get_list_length()
+        self.write('SOUR:LIST:IND:STOP %d'%(N-1))     
+
+
         
         #This tell to take the pulse External for modulating the output. 
         self.write('SOURce:PULM:SOURce EXT') 
