@@ -796,7 +796,10 @@ class GuiMainPulseSequence(egg.gui.Window):
         """
         _debug('GuiMainPulseSequence: prepare_THE_run_loop')
         # Send the data_array to the FPGA and prepare it
-        self.fpga.prepare_pulse(self.data_array) 
+        # IMPORTANT We are adding 120 ticks (us) off at both end of the total
+        # sequence. This is in order to give some extra time to the fpga to 
+        # process the fifo or other stuff. 
+        self.fpga.prepare_pulse(self.data_array, nb_ticks_off=120) 
         # Specify the counting mode again
         self.fpga.set_counting_mode(self.CET_mode)        
     
