@@ -708,24 +708,27 @@ class smb100a_api(_mp.visa_tools.visa_api_base):
         _debug('smb100a_api: prepare ESR')
         
         # Copy-paste the commands in Labview vi "Host SMIQ Command.vi"
-        #This tell to take the pulse External for modulating the output. 
-        self.write('SOURce:PULM:SOURce EXT') 
-        self.write('SOURce:PULM:STATe ON')
-        # Ouput on
-        self.write('OUTP ON') 
+
         # This prepares for a list mode with an external trigger
         self.write('LIST:LEAR')
         self.write('FREQ:MODE LIST')
         self.write('LIST:MODE STEP')
         self.write('TRIG:LIST:SOUR EXT')
         self.write('SOUR:LIST:IND:START 0')
-        self.write('SOUR:LIST:IND:STOP   ')     
+        self.write('SOUR:LIST:IND:STOP')     
+
         # Very important: we unable the display for avoiding glitches
         self.write('SYSTem:DISPlay:UPDate OFF')
         # Other things
         self.write('ABOR')
         self.write('*RST')
         self.write('LIST:SEL "New_list"')
+        
+        #This tell to take the pulse External for modulating the output. 
+        self.write('SOURce:PULM:SOURce EXT') 
+        self.write('SOURce:PULM:STATe ON')
+        # Ouput on
+        self.write('OUTP ON') 
         
     def prepare_for_Rabi(self):
         """
@@ -735,14 +738,18 @@ class smb100a_api(_mp.visa_tools.visa_api_base):
         Similar to what is doen in the Labview vi "Host SMIQ Command.vi" 
         """
         _debug('smb100a_api: prepare for Rabi')
-        #This tell to take the pulse External for modulating the output. 
-        self.write('SOURce:PULM:SOURce EXT') 
-        self.write('SOURce:PULM:STATe ON')     
+ 
         # This is also done in Labviw
         self.write('LIST:MODE OFF')
         self.write('ABOR')
         self.write('*RST')
-
+        # Same command as Labview
+        self.write('OUTP:STAT ON')
+        self.write('SOUR:FREQ:MODE CW')
+        #This tell to take the pulse External for modulating the output. 
+        self.write('SOURce:PULM:SOURce EXT') 
+        self.write('SOURce:PULM:STATe ON')
+        
         
     
 class anapico_api(_mp.visa_tools.visa_api_base):
@@ -1591,8 +1598,9 @@ class GUISignalGenerator(_mp.visa_tools.visa_gui_base):
             else:                              self.combo_mode.set_value(1, block_events=True).enable()
             self._combo_mode_changed()
             
-            # Update the list plot
-            self.query_list()
+#            # Update the list plot if there is one
+            #IT IS COMMENTED BECAUSE THERE ARE SOME BUG WHEN NO LIST IS ASSIGNED
+#            self.query_list()
 
     def _update_gui(self):
         """
@@ -1611,8 +1619,9 @@ class GUISignalGenerator(_mp.visa_tools.visa_gui_base):
             else:                              self.combo_mode.set_value(1, block_events=True).enable()
             self._combo_mode_changed()
     
-            # Update the list plot
-            self.query_list()
+            #Commented for now because there are some bugs when the list doesn't exist. 
+#            # Update the list plot
+#            self.query_list()
                 
     def _after_disconnect(self):
         """
