@@ -463,13 +463,14 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.sig_gen.settings['Generate-List/Mode']  = 'Log'
         
         # Prepare the signal generator for an List sweep
+       # The method should set the trigger to be external, pulse modulatiion, etc. 
+        self.sig_gen.api.prepare_for_ESR() # It is the same instruction that for the ESR (For sweeping the list)
+        #ORDER MATTER
         self.sig_gen.combo_mode.set_value(index=1) # Set in List mode
         self.sig_gen.button_generate_list.click()
         self.sig_gen.button_send_list.click()
         # Make the instrumenbt ready for the pulse sequence
-        # The method should set the trigger to be external, pulse modulatiion, etc. 
-        self.sig_gen.api.prepare_for_ESR() # It is the same instruction that for the ESR (For sweeping the list)
-        
+       
         # Overird the method to be called after each loop
         self.after_one_loop = self.gui_Rabi_power.after_one_loop   
 
