@@ -3245,7 +3245,14 @@ class GUIT1TimeTrace2(egg.gui.Window):
         _debug('GUIT1TimeTrace2: databoxplot_update')
         # Clear the plot
         self.databoxplot.clear() 
-        
+
+        # Add important information in the header
+        self.databoxplot.insert_header('repetition', self.rep)
+        self.databoxplot.insert_header('iteration' , self.iteration)
+        for key in self.treeDic_settings.get_keys():
+            # Add each element of the dictionnary three
+            self.databoxplot.insert_header(key , self.treeDic_settings[key])
+            
                 
         self.databoxplot['Time_(us)'] = self.t_probe_s
         # Loop over each readout 
@@ -3271,6 +3278,10 @@ class GUIT1TimeTrace2(egg.gui.Window):
             Number of repetition of the sequence into the fpga instruction
             """
         _debug('GUIT1TimeTrace2: after_one_loop')
+
+        # Note that for saving 
+        self.rep = rep
+        self.iteration = iteration
         
         # Get the counts per readout per block
         self.count_processor = _fc.ProcessFPGACounts(counts)
