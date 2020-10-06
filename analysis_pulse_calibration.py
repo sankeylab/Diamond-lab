@@ -21,9 +21,9 @@ print(d.ckeys)
 print(d.headers)
 
 # Set the followings to tru for showing vertical liones for the time
-show_laser_raise_fall = False
-show_RF1_raise_fall   = True
-show_RF2_raise_fall   = True
+show_laser_raise_fall = True
+show_RF1_raise_fall   = False
+show_RF2_raise_fall   = False
     
 rep     = d.headers['repetition']
 nb_iter = d.headers['iteration']

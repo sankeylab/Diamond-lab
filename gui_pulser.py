@@ -361,8 +361,9 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.sig_gen.settings['Generate-List/Steps'] = self.Nf
 
         # Make the instrumenbt ready for the pulse sequence
-        # The method should set the trigger to be external, pulse modulatiion, etc. 
         #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
+        self.sig_gen.button_reset.click()  # Reset the parameters 
+        # The method should set the trigger to be external, pulse modulatiion, etc. 
         self.sig_gen.api.prepare_for_ESR()
         
         # Prepare the signal generator for an ESR sequence
@@ -415,8 +416,9 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.f    = self.gui_Rabi.treeDic_settings['Frequency']
         
         # Prepare the signal generator for the specific sequence
-        self.sig_gen.api.prepare_for_Rabi()
         #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
+        self.sig_gen.button_reset.click()  # Reset the parameters 
+        self.sig_gen.api.prepare_for_Rabi() # Prepare the internal parameters of the machine
         self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
         self.sig_gen.number_dbm      .set_value(self.P)
         self.sig_gen.number_frequency.set_value(self.f*1e9 )#Convert into Hz
