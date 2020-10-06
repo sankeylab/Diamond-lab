@@ -3282,6 +3282,7 @@ class GUIT1TimeTrace2(egg.gui.Window):
         # Note that for saving 
         self.rep = rep
         self.iteration = iteration
+        self.counts_prior_to_process = counts # for debugging
         
         # Get the counts per readout per block
         self.count_processor = _fc.ProcessFPGACounts(counts)
