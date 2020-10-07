@@ -1705,8 +1705,10 @@ class GUIRabi(egg.gui.Window):
         delay_read = self.treeDic_settings['delay_read_before_laser'] # Delay (us) that we read before shining the laser
         dt_read_after_RF = self.treeDic_settings['dt_read_after_RF'] # How long to wait before reading after the RF (us)
         
-        # Define the time durations of the RF
-        self.dt_s = np.linspace(T_min_us, T_max_us, self.nb_block)
+        # Define the aimed time durations of the RF
+        # It is aimed, but we know that the real definition of the time is set
+        # by the tick of the FPGA.
+        self.dt_s_aimed = np.linspace(T_min_us, T_max_us, self.nb_block)
       
         t_ini_laser_init = 1  # Raise time for the initialization laser (us)
         dt_laser_init = 1 # Time duration of the initializaiton laser (us)
@@ -1725,9 +1727,10 @@ class GUIRabi(egg.gui.Window):
         channel_sync = ChannelPulses(channel=DIO_sync, name='Sync with scope')
         channel_sync.add_pulses([0, 0.5]) # At the beggining
         
+        self.dt_reals_s = [] # Will record the real time interval, accounting for the tick in the FPGA
         
         # Define a block for each duration to probe
-        for i, dt in enumerate(self.dt_s):
+        for i, dt in enumerate(self.dt_s_aimed):
             
             # Initialize the state into ms=0 with the green laser
             # Channel for the laser output, which follows the readout
@@ -1738,8 +1741,22 @@ class GUIRabi(egg.gui.Window):
 
             # Channel for the modulatiion of the RF
             channel_RF_mod = ChannelPulses(channel=DIO_PM, name='RF modulation')
-            # The RF span from time zero to the duration
-            channel_RF_mod.add_pulses([t0_RF, t0_RF+dt])
+            # Only put a pulse if the duration is longer than one tick
+            if dt >= 1/120:
+                print('dt = ', dt)
+                # The RF span from time zero to the duration
+                channel_RF_mod.add_pulses([t0_RF, t0_RF+dt])
+                # Note the real time interval for this pulse
+                times_pulses = channel_RF_mod.get_pulses_times() # This gives all the raise and fall
+                print(times_pulses)
+                self.test1 = channel_RF_mod
+                dt_last = times_pulses[-1] - times_pulses[-2] # Last interval
+                self.dt_reals_s.append(dt_last)
+                #Note to 
+            else:
+                print('dt = ', dt)
+                # Note the zero time interval
+                self.dt_reals_s.append(0)
             
             # Channel for the readout
             channel_read = ChannelPulses(channel=1, name='Read') 
@@ -1765,6 +1782,7 @@ class GUIRabi(egg.gui.Window):
                                      channel_laser])
             # Add the block to the sequence
             sequence.add_block(block)
+        
 
         
 # This is the previous pulse sequence
@@ -1819,7 +1837,7 @@ class GUIRabi(egg.gui.Window):
             # Add each element of the dictionnary three
             self.databoxplot.insert_header(key , self.treeDic_settings[key])
         # Now add the columns        
-        self.databoxplot['Time_(us)'] = self.dt_s
+        self.databoxplot['Time_(us)'] = self.dt_reals_s
         self.databoxplot['counts'] = self.counts_total[0]
         self.databoxplot['reference'] = self.counts_total[1]
         # TODO Remove this. This is for a general situation
