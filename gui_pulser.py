@@ -467,8 +467,9 @@ class GuiMainPulseSequence(egg.gui.Window):
         
         # Prepare the signal generator for an List sweep
        # The method should set the trigger to be external, pulse modulatiion, etc. 
-        self.sig_gen.api.prepare_for_ESR() # It is the same instruction that for the ESR (For sweeping the list)
-        #ORDER MATTER
+        #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
+        self.sig_gen.button_reset.click()  # Reset the parameters 
+        self.sig_gen.api.prepare_for_Rabi() # Prepare the internal parameters of the machine
         self.sig_gen.combo_mode.set_value(index=1) # Set in List mode
         self.sig_gen.button_generate_list.click()
         self.sig_gen.button_send_list.click()
@@ -511,8 +512,9 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.f    = self.gui_T1_trace2.treeDic_settings['Frequency']
         
         # Prepare the signal generator for the specific sequence
-        self.sig_gen.api.prepare_for_Rabi() # Same setup as Rabi
         #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
+        self.sig_gen.button_reset.click()  # Reset the parameters 
+        self.sig_gen.api.prepare_for_Rabi() # Prepare the internal parameters of the machine
         self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
         self.sig_gen.number_dbm      .set_value(self.P)
         self.sig_gen.number_frequency.set_value(self.f*1e9 )#Convert into Hz
@@ -580,8 +582,9 @@ class GuiMainPulseSequence(egg.gui.Window):
         self.f    = self.gui_T1_trace3.treeDic_settings['Frequency']
         
         # Prepare the signal generator for the specific sequence
-        self.sig_gen.api.prepare_for_Rabi() # Same setup as Rabi
         #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
+        self.sig_gen.button_reset.click()  # Reset the parameters 
+        self.sig_gen.api.prepare_for_Rabi() # Prepare the internal parameters of the machine
         self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
         self.sig_gen.number_dbm      .set_value(self.P)
         self.sig_gen.number_frequency.set_value(self.f*1e9 )#Convert into Hz
@@ -630,8 +633,9 @@ class GuiMainPulseSequence(egg.gui.Window):
             self.f1    = self.gui_pulse_calibration.treeDic_settings['Frequency1']
             
             # Prepare the signal generator for the specific sequence
-            self.sig_gen.api.prepare_for_Rabi() # Same setup as Rabi
             #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
+            self.sig_gen.button_reset.click()  # Reset the parameters 
+            self.sig_gen.api.prepare_for_Rabi() # Prepare the internal parameters of the machine
             self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
             self.sig_gen.number_dbm      .set_value(self.P1)
             self.sig_gen.number_frequency.set_value(self.f1*1e9 )#Convert into Hz
@@ -642,8 +646,9 @@ class GuiMainPulseSequence(egg.gui.Window):
             self.f2    = self.gui_pulse_calibration.treeDic_settings['Frequency2']
             
             # Prepare the signal generator for the specific sequence
-            self.sig_gen_second.api.prepare_for_Rabi() # Same setup as Rabi
             #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
+            self.sig_gen_second.button_reset.click()  # Reset the parameters 
+            self.sig_gen_second.api.prepare_for_Rabi() # Prepare the internal parameters of the machine
             self.sig_gen_second.combo_mode.set_value(index=0) # Set in Fixed mode
             self.sig_gen_second.number_dbm      .set_value(self.P2)
             self.sig_gen_second.number_frequency.set_value(self.f2*1e9 )#Convert into Hz
@@ -724,15 +729,17 @@ class GuiMainPulseSequence(egg.gui.Window):
         
         # Prepare the signal generator for the specific sequence
         # The first signal generator
-        self.sig_gen.api.prepare_for_Rabi() # Same setup as Rabi
         #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
+        self.sig_gen.button_reset.click()  # Reset the parameters 
+        self.sig_gen.api.prepare_for_Rabi() # Prepare the internal parameters of the machine
         self.sig_gen.combo_mode.set_value(index=0) # Set in Fixed mode
         self.sig_gen.number_dbm      .set_value(self.P1)
         self.sig_gen.number_frequency.set_value(self.f1*1e9 )#Convert into Hz
         
         # The second signal generator
-        self.sig_gen_second.api.prepare_for_Rabi() # Same setup as Rabi
         #THE ORDER OF WHICH METHOD TO CALL FIRST MIGHT MATTER
+        self.sig_gen_second.button_reset.click()  # Reset the parameters 
+        self.sig_gen_second.api.prepare_for_Rabi() # Prepare the internal parameters of the machine
         self.sig_gen_second.combo_mode.set_value(index=0) # Set in Fixed mode
         self.sig_gen_second.number_dbm      .set_value(self.P2)
         self.sig_gen_second.number_frequency.set_value(self.f2*1e9 )#Convert into Hz
@@ -1743,16 +1750,12 @@ class GUIRabi(egg.gui.Window):
             channel_RF_mod = ChannelPulses(channel=DIO_PM, name='RF modulation')
             # Only put a pulse if the duration is longer than one tick
             if dt >= 1/120:
-                print('dt = ', dt)
                 # The RF span from time zero to the duration
                 channel_RF_mod.add_pulses([t0_RF, t0_RF+dt])
                 # Note the real time interval for this pulse
                 times_pulses = channel_RF_mod.get_pulses_times() # This gives all the raise and fall
-                print(times_pulses)
-                self.test1 = channel_RF_mod
                 dt_last = times_pulses[-1] - times_pulses[-2] # Last interval
                 self.dt_reals_s.append(dt_last)
-                #Note to 
             else:
                 print('dt = ', dt)
                 # Note the zero time interval
