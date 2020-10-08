@@ -64,24 +64,6 @@ class GUIMainExperiment(egg.gui.Window):
         # Fill the GUI
         self.initialize_GUI()  
         
-        
-        # Some attribute
-#TODO remove this line if everything is cool.
-#        self.pulse_was_running_before_optimizing = False
-#        self.magnet_scan_line_was_running_before_optimizing = False
-        
-
-        
-        #TODO Important Better handlge the optimization during either the pulse
-        # Sequence or during the magnet scan. Very important, because we gonna 
-        # have other protocols which will want to use the optimizer !
-        # Maybe the information should be encoded in the specific GUIs themself !
-        # Overrid some methods
-#TODO remove this line if everything is cool.
-#        self.gui_pulser.event_optimize = self.pulser_optimize        
-#        self.gui_confocal.gui_optimizer.event_optimize_ends   = self.after_optimization
-#        self.gui_magnet.gui_sweep_lines.event_one_line_is_swept = self.magnet_scan_line_optimize
-        
     def initialize_GUI(self):
         """
         Fill up the GUI
