@@ -692,9 +692,9 @@ class GUIProbe2StatesOneTime(egg.gui.Window):
         self.databoxplot.clear() 
         
         # Feed the databox plot with the data
-        self.databoxplot['ms0']  = self.count_per_iter_ms0_s
+        self.databoxplot['ms0']   = self.count_per_iter_ms0_s
         self.databoxplot['ms-+1'] = self.count_per_iter_msmp1_s
-        self.databoxplot['ref']  = self.count_per_iter_ref_s
+        self.databoxplot['ref']   = self.count_per_iter_ref_s
         
         # Add important information in the header
         self.databoxplot.insert_header('repetition', self.rep)

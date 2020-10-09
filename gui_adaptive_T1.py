@@ -128,7 +128,7 @@ class GUIManager(egg.gui.Window):
                                       alignment=0)
         # Tab for the employee
         self.tab_employee = self.tabs_steps.add_tab('Employee')
-        self.employee = gui_adaptive_T1_measurer.GUIProbe3StatesOneTime(self.gui_pulser)
+        self.employee = gui_adaptive_T1_measurer.GUIProbe2StatesOneTime(self.gui_pulser)
         self.tab_employee.place_object(self.employee, 
                                       alignment=0)
         # Tab for the inferencer

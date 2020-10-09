@@ -14,6 +14,7 @@ import gui_pulser
 import gui_saturation
 import gui_pipulse_optimization
 import gui_magnet
+import gui_adaptive_T1
 
 import sys # Useful for error handling
 import traceback
@@ -126,8 +127,9 @@ class GUIMainExperiment(egg.gui.Window):
         self.tab_pipulse.place_object(self.gui_pipulse_opt, alignment=0)
 
         # Place a tab for the adaptive Bayes
-        self.tab_bayes = self.tabs2.add_tab('Adaptive Bayes')
-        self.tab_bayes.place_object(egg.gui.Button('Wooho'))  
+        self.tab_adaptiveT1 = self.tabs2.add_tab('Adaptive T1')
+        self.gui_adaptive_T1 = gui_adaptive_T1.GUIManager(self.gui_pulser)
+        self.tab_adaptiveT1.place_object(self.gui_adaptive_T1)  
         
 
     def button_checkbug_clicked(self):
