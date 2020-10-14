@@ -276,11 +276,9 @@ if __name__ == '__main__':
     _debug_enabled     = True
     
     
-    self = map2D()
-    self.show()
+
     
-    list_color = self.colormaps.get_list_colormaps()
-    print('List of colormap = ', list_color)
+
     
     # Try some data
     ts = np.linspace(5, 20, 1000)
@@ -298,10 +296,15 @@ if __name__ == '__main__':
         
     Z = Gauss
     
+    # Initiate the mapper
+    self = map2D()
+    self.show()
     self.set_data(Z, (x.min(), x.max(), len(x)), (y.min(), y.max(), len(y)),
                   'Hey x', 'Holla y')
     
-    
+    # Just verify the list of colormap. 
+    list_color = self.colormaps.get_list_colormaps()
+    print('List of colormap = ', list_color)    
     
     
     

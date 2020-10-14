@@ -6,6 +6,8 @@ Created on Mon Aug 17 16:34:14 2020
 """
 
 import gui_adaptive_T1_measurer
+import gui_map_2D
+import Bayes_rates
 
 import numpy as np
 from spinmob import egg
@@ -52,6 +54,8 @@ class GUIManager(egg.gui.Window):
         
         # Initialise the GUI widgets. 
         self.initialize_GUI()
+        
+        
                
     def initialize_GUI(self):
         """
@@ -70,13 +74,7 @@ class GUIManager(egg.gui.Window):
                                              alignment=1)
         self.button_save.set_text('Save :D :D :D')
         self.connect(self.button_save.signal_clicked, self.button_save_clicked)  
-
-        # A button for faking a measurement (usefull for testing, very bad for real implementation lol)
-        self.button_fake_a_measure = self.place_object(egg.gui.Button(), row=0, column=2,
-                                             alignment=1)
-        self.button_fake_a_measure.set_text('Fake a measure :O')
-        self.connect(self.button_fake_a_measure.signal_clicked, self.button_fake_a_measure_clicked)  
-        
+       
         # tree dictionnarry for the settings
         self.treeDic_settings = egg.gui.TreeDictionary(autosettings_path='setting_adaptiveT1Bayes')
         self.place_object(self.treeDic_settings, row=1, column=0)
@@ -108,7 +106,8 @@ class GUIManager(egg.gui.Window):
         self.treeDic_settings.add_parameter('Prior_type', self.list_prior_types, 
                                             tip='Which prior to use. Based on the bounds given for the rates.')  
 
-
+        # FOr now we give these value. 
+        # We might atsome point just give the prior on them. 
         self.treeDic_settings.add_parameter('PL0', 0.04, 
                                             type='float', step=0.04, 
                                             bounds=[0,None], 
@@ -120,21 +119,26 @@ class GUIManager(egg.gui.Window):
  
         # Add a tab for each step of the protocol
         self.tabs_steps = egg.gui.TabArea(autosettings_path='tabs_adaptiveT1_steps')
-        self.place_object(self.tabs_steps,column_span=4, alignment=0)
+        self.place_object(self.tabs_steps,row=1, column=1,
+                          column_span=4, alignment=0)
         
         # Tab for the advisor
         self.tab_advisor = self.tabs_steps.add_tab('Advisor')
         self.tab_advisor.place_object(egg.gui.CheckBox('I am an advisor.'), 
                                       alignment=0)
         # Tab for the employee
-        self.tab_employee = self.tabs_steps.add_tab('Employee')
+        #TODO CHange the name "employee" for "measurer".
+        self.tab_employee = self.tabs_steps.add_tab('Measurer')
         self.employee = gui_adaptive_T1_measurer.GUIProbe2StatesOneTime(self.gui_pulser)
         self.tab_employee.place_object(self.employee, 
                                       alignment=0)
         # Tab for the inferencer
+        # Add the map for the posterior
+        self.map_post = gui_map_2D.map2D()
         self.tab_inferencer = self.tabs_steps.add_tab('Inferencer')
         self.tab_inferencer.place_object(egg.gui.CheckBox('I am doing inference everyday.'), 
                                       alignment=0)
+        self.tab_inferencer.place_object(self.map_post)
         
         # Add a label for showing the status
         # Make a label for showing some estimate
@@ -142,24 +146,7 @@ class GUIManager(egg.gui.Window):
                '\n Measurer: Probe one time 3 states')
         self.label_status = egg.gui.Label(txt)
         self.place_object(self.label_status, row=2, column=2)                
-        
-        
-        
-        
-        
-#        # Add the Image View for the posterior. 
-#        self.plot_item = egg.pyqtgraph.PlotItem()
-#        # Put an image in the plot item. 
-#        self.plot_image = egg.pyqtgraph.ImageView(view=self.plot_item)
-#        self.place_object(self.plot_image, row=1, column = 1, 
-#                          row_span=2, column_span=3, alignment=0)  
-#        self.set_column_stretch(1,10)
-#        self.set_row_stretch(1,10)
-#        
-#        # Add a dummy map 
-#        x = np.linspace(1, 20, 100)
-#        y = np.linspace(1, 20, 100)
-#        X,Y = np.meshgrid(x,y)
+
 
 
     def initiate_attributes(self):
@@ -180,7 +167,7 @@ class GUIManager(egg.gui.Window):
         #Define the axis for the prior pdf      
         self.gp_axis = np.linspace(self.Gp_min, self.Gp_max, self.size_axis_Gp) 
         self.gm_axis = np.linspace(self.Gm_min,self. Gm_max, self.size_axis_Gm) 
-        
+        self.mesh_gp, self.mesh_gm = np.meshgrid(self.gp_axis, self.gm_axis)
         # Set the prior according to the type of prior
         if self.treeDic_settings['Prior_type'] == 'Flat':
             #Define the prior 
@@ -199,16 +186,11 @@ class GUIManager(egg.gui.Window):
         # Define the constants
         self.PL0      = self.treeDic_settings['PL0']
         self.contrast = self.treeDic_settings['Contrast']
-        constants = [self.PL0, self.contrast]
-        # Define the model functions that describe our experiment. 
-        f0 = PLModel(constants).PL00
-        fp = PLModel(constants).PLp0
-        fm = PLModel(constants).PLm0
-        self.model_functions = [f0, fp, fm]
-            
-        # Initiate the class for Bayes inference.
-        self.bayes = Bayes3Measure(self.model_functions, self.prior, 
-                                   self.gp_axis, self.gm_axis)
+        
+        self.bayes = Bayes_rates.Bayes()
+        self.bayes.initiate(self.prior, )
+
+
 
     def button_run_clicked(self):
         """
@@ -281,388 +263,8 @@ class GUIManager(egg.gui.Window):
         self.plot_image.view.setAspectLocked(False) # Input True for having the scaling right.              
     
 
-def integral2D(x,y, Z):
-    """
-    Integrate in 2 dimension Z. 
-    Z is the 2D array to integrate. 
-    x and y are both 1D array used to define the axis of Z
-    """
-    _debug('integral2D')#,
-#               'x:', x,
-#               'y:', y,
-#               'Z:', Z)
-    firstInt = np.trapz(Z, x=x, axis=1) #First integrate along the first axis
-    return     np.trapz(firstInt, x=y) #Integrate over the remaining axis
 
-class Bayes3Measure():
-    """
-    Bayes inference for 3 measure
-    
-    Take the data and update the posterior.
-    
-    This is how it should be used:
-        
-        - Initiate it with the prior and the model functions. 
-        - Add measurement for updating the likelihood. This can be done many
-          time. 
-        - Get the posterior distribution.  
-     
-    """
 
-    def __init__(self, model_functions, prior, gp_axis, gm_axis):
-        """
-        For this Bayes, we 
-        
-        model_functions = [f0, fp, fm]
-        
-        f0,fp,fm:
-            Function with signature (t,Gp,Gm) which gonna define the PL for the 
-            three type of measurement. 
-            The likelihood will be computed by using the difference f0-fp and
-            f0-fm.
-            
-        prior:
-            (2 dimensionnal array) Initial probability distribution that we have 
-            on the 2 rates rates gamam+ and gamma-. No need to be normalized, 
-            because the normalizing constant will be set when computing the 
-            posterior. The relative axis (the two rates) should match the 
-            meshgrid bellow for Gp_Axis and Gm_Axis. 
-            
-        gp_axis: 
-            1D array of the axis for gamma+
-        gm_axis: 
-            1D array of the axis for gamma-
-            
-        """
-        _debug('Bayes3Measure: __init__')
-        _debug('Your limitation-it’s only your imagination.')
-       
-        self.model_functions = model_functions        
-        self.f0 = model_functions[0]
-        self.fp = model_functions[1]
-        self.fm = model_functions[2]
-
-        #Define the axis over which we estimate the rates and the probability distribution
-        self.gp_axis = gp_axis #1D axis for gamma+
-        self.gm_axis = gm_axis #1D axis for gamma-
-        self.NGp    = len(self.gp_axis)       #Number of discrete point along the gamma+ axis for the probability distributions.
-        self.NGm    = len(self.gm_axis)       #Number of discrete point along the gamma- axis for the probability distributions. 
-        #Meshgrid
-        self.Gp_Axis, self.Gm_Axis = np.meshgrid(self.gp_axis, self.gm_axis)  
-        
-        #Get the prior 
-        self.prior = prior #Prior distribution
-        
-        # Initial the log of like-lihood. With no measurement for now.
-        self.L = np.zeros(np.shape(self.Gp_Axis)) #This will be related to the logatirhtm of the like-lihood. It simplify a lot the calculation and reduce the number of calculation 
-        # Initiate the posterior
-        self.update_post()           
-        
-        
-    def get_post(self):
-        """
-        Update the posterior and return it
-        Compute it from the like-lihood and the prior, than normalize it
-        """
-        _debug('Bayes3Measure: get_post' )
-        
-        return self.Ppost
-
-    def likelihood(self, exp0, expp, expm, diffp, diffm):   
-        """
-        Compute the likehihood of the measured data. 
-        The measured data are diffp and dippm. 
-        
-        In the following, R is the total number of readout performed.
-        
-        exp0:
-            (array) Expectation for R*f0, for each element of the domain. 
-        expp:
-            (array) Expectation for R*fp, for each element of the domain. 
-        expm:
-            (array) Expectation for R*fm, for each element of the domain.   
-            
-        diffp: 
-            (float) Measured value of the difference R*(f0-fp). That's it, the 
-            measured total difference. (not averaged: the difference is taken 
-            with the total numbers of counts)
-        diffm: 
-            (float) Measured value of the difference R*(f0-fm )  That's it, the 
-            measured total difference (not averaged: the difference is taken 
-            with the total numbers of counts)
-        
-        """
-        _debug('Bayes3Measure: likelihood')
-        
-        # Precompute arrays for simplification
-        ZZZ = expp*expm +exp0*(expp+expm)
-        
-        A = (exp0 + expp + expm +2*(diffp+diffm) 
-            + diffp*diffp/expp + diffm*diffm/expm )
-        
-        B = (expp*diffm + expm*(3*expp+diffp))**2       
-        C = exp0/(expp*expm*ZZZ)
-        # THE like-lihood
-        L = 0.5*(np.log(ZZZ) + A - B*C )
-        
-        return L     
-
-    def update_post(self):
-        """
-        Update the posterior with the like-lihood
-        """
-        
-        # Update the posterior from the like-lihood and the prior
-        self.Ppost  = np.exp(-self.L)*self.prior
-        self.Ppost /= integral2D(self.gp_axis, self.gm_axis, self.Ppost) #Normalize 
-        if _debug_enabled:
-            #Put this debug into an extra of, because the extra calculation of the volume might be expensive 
-            _debug('Volume of posterior (its not fun)  = ', integral2D(self.gp_axis, self.gm_axis, self.Ppost ) ) 
-                    
-        
-    def add_measurement(self, t_probe, nb_readout, diff_p, diff_m):
-        """
-        Add a measurement for updating the likelihood.
-        
-        t_probe:
-            (float) Time at which the measurment is done. 
-        nb_readout:
-            (float) Number of readout performed on each state. This will be used
-            for computing the expectation. 
-        diff_p:
-            Measured TOTAL difference between the counts of the f0 and fp 
-            measurements. Without noise, it would be expected to be equal to
-            nb_readout*(f0-fp). 
-        diff_m:
-            Measured TOTAL difference between the counts of the f0 and fm 
-            measurements. Without noise, it would be expected to be equal to
-            nb_readout*(f0-fm). 
-            
-        """
-        
-        # Get the like-lihood of this measurement
-        exp_0 = self.f0(t_probe, self.Gp_Axis, self.Gm_Axis)*nb_readout
-        exp_p = self.fp(t_probe, self.Gp_Axis, self.Gm_Axis)*nb_readout
-        exp_m = self.fm(t_probe, self.Gp_Axis, self.Gm_Axis)*nb_readout
-        # Update the total likelihood. And rescale it
-        self.L += self.likelihood(exp_0, exp_p, exp_m, diff_p, diff_m)
-        self.L -= np.min(self.L) # Shift it to avoid too much huge exponential
-        
-        # Update the posterior
-        self.update_post()
-        
-# Let's put this class here for now        
-class PLModel():
-    """
-    Define the model for the Photoluminescences for each of the 9 types of 
-    measurement.  
-    """
-    def __init__(self, constants):
-        """
-        
-        constants = [PL0, contrast]
-        PL0:
-            Mean photocounts from the ms=0 state. 
-        contrast:
-            Contrast in photoluminescence from the ms=+-1 state. This is 
-            defined such that the photoluminescence coming from ms=+-1 is 
-            PL0*(1-contrast)
-        """
-        self.PL0 = constants[0]       
-        self.contrast   = constants[1]
-        
-        # Define some dimensionless number appearing over and over in the model. 
-        self.A = self.PL0-self.contrast*self.PL0*2/3 
-        self.B = self.contrast*self.PL0/6 
-        
-    def PL00(self, t, Gp, Gm):
-        """
-        Photoluminescence of initializing in ms=0, reading ms=0
-        t:
-            Time to probe
-        Gp:
-            Rate gamma+
-        Gm: 
-            Rate gamma-
-        Units must be such that t*Gp or t*Gm is unitless. 
-        """
-        G0 = np.sqrt(Gp*Gp + Gm*Gm - Gp*Gm)
-        betap = Gm + Gp + G0
-        betam = Gm + Gp - G0
-        
-        coefp = (2*G0 + Gm + Gp)/G0
-        coefm = (2*G0 - Gm - Gp)/G0
-        
-        return self.A + self.B*(  coefm*np.exp(-t*betam) 
-                                + coefp*np.exp(-t*betap) )
-
-    def PLp0(self, t, Gp, Gm):
-        """
-        Photoluminescence of initializing in ms=p, reading ms=0
-        t:
-            Time to probe
-        Gp:
-            Rate gamma+
-        Gm: 
-            Rate gamma-
-        Units must be such that t*Gp or t*Gm is unitless. 
-        """
-        G0 = np.sqrt(Gp*Gp + Gm*Gm - Gp*Gm)
-        betap = Gm + Gp + G0
-        betam = Gm + Gp - G0
-        
-        coefp = -(G0 - Gm + 2*Gp)/G0
-        coefm = -(G0 + Gm - 2*Gp)/G0
-        
-        return self.A + self.B*(  coefm*np.exp(-t*betam) 
-                                + coefp*np.exp(-t*betap) )
-
-    def PLm0(self, t, Gp, Gm):
-        """
-        Photoluminescence of initializing in ms=m, reading ms=0
-        t:
-            Time to probe
-        Gp:
-            Rate gamma+
-        Gm: 
-            Rate gamma-
-        Units must be such that t*Gp or t*Gm is unitless. 
-        """
-        G0 = np.sqrt(Gp*Gp + Gm*Gm - Gp*Gm)
-        betap = Gm + Gp + G0
-        betam = Gm + Gp - G0
-        
-        coefp = -(G0 + 2*Gm - Gp)/G0
-        coefm = -(G0 - 2*Gm + Gp)/G0
-        
-        return self.A + self.B*(  coefm*np.exp(-t*betam) 
-                                + coefp*np.exp(-t*betap) )
-
-    def PL0p(self, t, Gp, Gm):
-        """
-        Photoluminescence of initializing in ms=0, reading ms=+
-        t:
-            Time to probe
-        Gp:
-            Rate gamma+
-        Gm: 
-            Rate gamma-
-        Units must be such that t*Gp or t*Gm is unitless. 
-        """
-        G0 = np.sqrt(Gp*Gp + Gm*Gm - Gp*Gm)
-        betap = Gm + Gp + G0
-        betam = Gm + Gp - G0
-        
-        coefp = -(G0 - Gm + 2*Gp)/G0
-        coefm = -(G0 + Gm - 2*Gp)/G0
-        
-        return self.A + self.B*(  coefm*np.exp(-t*betam) 
-                                + coefp*np.exp(-t*betap) )
-
-    def PLpp(self, t, Gp, Gm):
-        """
-        Photoluminescence of initializing in ms=+, reading ms=+
-        t:
-            Time to probe
-        Gp:
-            Rate gamma+
-        Gm: 
-            Rate gamma-
-        Units must be such that t*Gp or t*Gm is unitless. 
-        """
-        G0 = np.sqrt(Gp*Gp + Gm*Gm - Gp*Gm)
-        betap = Gm + Gp + G0
-        betam = Gm + Gp - G0
-        
-        coefp = (2*G0 - 2*Gm + Gp)/G0
-        coefm = (2*G0 + 2*Gm - Gp)/G0
-        
-        return self.A + self.B*(  coefm*np.exp(-t*betam) 
-                                + coefp*np.exp(-t*betap) )
-
-    def PLmp(self, t, Gp, Gm):
-        """
-        Photoluminescence of initializing in ms=-, reading ms=+
-        t:
-            Time to probe
-        Gp:
-            Rate gamma+
-        Gm: 
-            Rate gamma-
-        Units must be such that t*Gp or t*Gm is unitless. 
-        """
-        G0 = np.sqrt(Gp*Gp + Gm*Gm - Gp*Gm)
-        betap = Gm + Gp + G0
-        betam = Gm + Gp - G0
-        
-        coefp = +(-G0 + Gm + Gp)/G0
-        coefm = -(+G0 + Gm + Gp)/G0
-        
-        return self.A + self.B*(  coefm*np.exp(-t*betam) 
-                                + coefp*np.exp(-t*betap) )
-
-    def PL0m(self, t, Gp, Gm):
-        """
-        Photoluminescence of initializing in ms=0, reading ms=-
-        t:
-            Time to probe
-        Gp:
-            Rate gamma+
-        Gm: 
-            Rate gamma-
-        Units must be such that t*Gp or t*Gm is unitless. 
-        """
-        G0 = np.sqrt(Gp*Gp + Gm*Gm - Gp*Gm)
-        betap = Gm + Gp + G0
-        betam = Gm + Gp - G0
-        
-        coefp = -(G0 + 2*Gm - Gp)/G0
-        coefm = -(G0 - 2*Gm + Gp)/G0
-        
-        return self.A + self.B*(  coefm*np.exp(-t*betam) 
-                                + coefp*np.exp(-t*betap) )
-
-    def PLpm(self, t, Gp, Gm):
-        """
-        Photoluminescence of initializing in ms=+, reading ms=-
-        t:
-            Time to probe
-        Gp:
-            Rate gamma+
-        Gm: 
-            Rate gamma-
-        Units must be such that t*Gp or t*Gm is unitless. 
-        """
-        G0 = np.sqrt(Gp*Gp + Gm*Gm - Gp*Gm)
-        betap = Gm + Gp + G0
-        betam = Gm + Gp - G0
-        
-        coefp = +(-G0 + Gm + Gp)/G0
-        coefm = -(+G0 + Gm + Gp)/G0
-        
-        return self.A + self.B*(  coefm*np.exp(-t*betam) 
-                                + coefp*np.exp(-t*betap) )
-
-    def PLmm(self, t, Gp, Gm):
-        """
-        Photoluminescence of initializing in ms=-, reading ms=-
-        t:
-            Time to probe
-        Gp:
-            Rate gamma+
-        Gm: 
-            Rate gamma-
-        Units must be such that t*Gp or t*Gm is unitless. 
-        """
-        G0 = np.sqrt(Gp*Gp + Gm*Gm - Gp*Gm)
-        betap = Gm + Gp + G0
-        betam = Gm + Gp - G0
-        
-        coefp = (2*G0 + Gm - 2*Gp)/G0
-        coefm = (2*G0 - Gm + 2*Gp)/G0
-        
-        return self.A + self.B*(  coefm*np.exp(-t*betam) 
-                                + coefp*np.exp(-t*betap) )
 
 
     
@@ -697,7 +299,7 @@ if __name__=="__main__":
     gui = gui_pulser.GuiMainPulseSequence(fpga)
     gui.show()
     
-    self = GUIManager(gui, size=[1500,800])
+    self = GUIManager(gui, size=[1800,1000])
     self.show()
     
     
