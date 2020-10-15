@@ -211,17 +211,17 @@ if __name__ == '__main__':
     bitfile_path = infos.headers['FPGA_bitfile_path']
     resource_num = infos.headers['FPGA_resource_number']
     # Get the fpga API
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) 
-    fpga.open_session()
-
-    self = GUIMainConfocal(fpga)
-    self.show()
+#    fpga = _fc.FPGA_api(bitfile_path, resource_num) 
+#    fpga.open_session()
+#
+#    self = GUIMainConfocal(fpga)
+#    self.show()
     
     # for testing the gui not embeded
     
 
-#    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
-#    fpga_fake.open_session()
-#    self = GUIMainConfocal(fpga_fake)
-#    self.show()
+    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
+    fpga_fake.open_session()
+    self = GUIMainConfocal(fpga_fake)
+    self.show()
 

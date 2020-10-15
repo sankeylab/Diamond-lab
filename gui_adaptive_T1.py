@@ -6,6 +6,7 @@ Created on Mon Aug 17 16:34:14 2020
 """
 
 import gui_adaptive_T1_measurer
+import gui_adaptive_T1_analyser
 import gui_map_2D
 import Bayes_rates
 
@@ -55,6 +56,8 @@ class GUIManager(egg.gui.Window):
         # Initialise the GUI widgets. 
         self.initialize_GUI()
         
+        # Some attributes
+        self.t_probe_p, self.t_probe_m = [0, 0] # Best time to probe
         
                
     def initialize_GUI(self):
@@ -116,29 +119,70 @@ class GUIManager(egg.gui.Window):
                                             type='float', step=0.01, 
                                             bounds=[0,None], 
                                             tip='Contrast between the state ms=0 and ms=+-1 at time=0.\nThis is defined as (PL0-PL+-)/PL0, where PL+- is the mean photocount of ms=+-1.') 
+        
+        # Specific things for the pulse sequence for ms=+1
+        self.treeDic_settings.add_parameter('Pipulse+/frequency', 3.1, 
+                                            type='float', step=0.1, decimals=10,
+                                            bounds=[0,None], suffix=' GHz',
+                                            tip='Frequency of the pipulse for initiating the ms=+1 state')
+        self.treeDic_settings.add_parameter('Pipulse+/dt', 0.3, 
+                                            type='float', step=0.1, decimals=10,
+                                            bounds=[0,None], suffix=' us',
+                                            tip='Duration of pi pulse for ms=+1(RF)') 
+        self.treeDic_settings.add_parameter('Pipulse+/power', -20, 
+                                            type='float', step=1, decimals=10,
+                                            bounds=[-50,30], suffix=' dBm',
+                                            tip='Constant power of the RF for the pipulse of ms=+1')
+        self.treeDic_settings.add_parameter('Pipulse+/DIO_modulation', 2, 
+                                            type='int', step=1, 
+                                            bounds=[0,16],
+                                            tip='DIO for modulating the pi pulse of ms=+1. AKA for sending the RF.')  
+        
+        # Specific things for the pulse sequence for ms=-1
+        self.treeDic_settings.add_parameter('Pipulse-/frequency', 2.7, 
+                                            type='float', step=0.1, suffix=' GHz',
+                                            bounds=[0,None], decimals=10,
+                                            tip='Frequency of the pipulse for initiating the ms=-1 state')
+        self.treeDic_settings.add_parameter('Pipulse-/dt', 0.3, 
+                                            type='float', step=0.1, decimals=10,
+                                            bounds=[0,None], suffix=' us',
+                                            tip='Duration of pi pulse for ms=-1(RF)') 
+        self.treeDic_settings.add_parameter('Pipulse-/power', -20, 
+                                            type='float', step=1, decimals=10,
+                                            bounds=[-50,30], suffix=' dBm',
+                                            tip='Constant power of the RF for the pipulse of ms=-1')
+        self.treeDic_settings.add_parameter('Pipulse-/DIO_modulation', 4, 
+                                            type='int', step=1, 
+                                            bounds=[0,16],
+                                            tip='DIO for modulating the pi pulse of ms=-1. AKA for sending the RF.')  
+        
+        
+        
+
  
         # Add a tab for each step of the protocol
         self.tabs_steps = egg.gui.TabArea(autosettings_path='tabs_adaptiveT1_steps')
         self.place_object(self.tabs_steps,row=1, column=1,
                           column_span=4, alignment=0)
         
-        # Tab for the advisor
-        self.tab_advisor = self.tabs_steps.add_tab('Advisor')
-        self.tab_advisor.place_object(egg.gui.CheckBox('I am an advisor.'), 
+        # Tab for the analyser
+        self.gui_analyser = gui_adaptive_T1_analyser.GUIBayesAnalyser()
+        self.tab_analyser = self.tabs_steps.add_tab('Analyser')
+        self.tab_analyser.place_object(self.gui_analyser, 
                                       alignment=0)
-        # Tab for the employee
-        #TODO CHange the name "employee" for "measurer".
-        self.tab_employee = self.tabs_steps.add_tab('Measurer')
-        self.employee = gui_adaptive_T1_measurer.GUIProbe2StatesOneTime(self.gui_pulser)
-        self.tab_employee.place_object(self.employee, 
+        # Tab for the measurer
+        self.tab_measurer = self.tabs_steps.add_tab('Measurer')
+        self.gui_measurer = gui_adaptive_T1_measurer.GUIProbe2StatesOneTime(self.gui_pulser)
+        self.tab_measurer.place_object(self.gui_measurer, 
                                       alignment=0)
         # Tab for the inferencer
         # Add the map for the posterior
         self.map_post = gui_map_2D.map2D()
         self.tab_inferencer = self.tabs_steps.add_tab('Inferencer')
         self.tab_inferencer.place_object(egg.gui.CheckBox('I am doing inference everyday.'), 
-                                      alignment=0)
-        self.tab_inferencer.place_object(self.map_post)
+                                      row=0, alignment=0)
+        self.tab_inferencer.place_object(self.map_post, 
+                                         row=1, column=0, alignment=0)
         
         # Add a label for showing the status
         # Make a label for showing some estimate
@@ -182,31 +226,148 @@ class GUIManager(egg.gui.Window):
             dy = 0.5*(self.Gm_max-self.Gm_min) # Width in the gamma- direction
             self.prior = np.exp(-( (X-x0)*(X-x0)/dx**2 + (Y-y0)*(Y-y0)/dy**2 )) # A non-skewed gaussian
 
-        # Initiate the class for processing the protocol
         # Define the constants
         self.PL0      = self.treeDic_settings['PL0']
         self.contrast = self.treeDic_settings['Contrast']
         
+        
+        # Bayes class
         self.bayes = Bayes_rates.Bayes()
-        self.bayes.initiate(self.prior, )
+        self.bayes.initiate(self.prior, self.mesh_gp, self.mesh_gm)
+        
+        # Update the map of the posterior
+        self.update_map_post()
+        
 
-
-
+        
+        
+        
+        
+        
+    def update_map_post(self):
+        """
+        Make the map of the posterior of the Bayesinferencer so far
+        """
+        _debug('GUIManager: update_map_post')
+        # Put the posterior
+        self.map_post.set_data(self.bayes.post, # Z
+                               (self.Gp_min*1e-3, self.Gp_max*1e-3 , self.size_axis_Gp), # (xmin, xmax), size(x)
+                               (self.Gm_min*1e-3, self.Gm_max*1e-3 , self.size_axis_Gm), # (ymin, ymax), size(y)
+                               'Gamma + (kHz)', 'Gamma - (kHz)')
+    def step1_adapt_parameters(self):
+        """
+        Adapt the set of parameters for the next measurement. 
+        It take the information from the posterior of the Bayes inference. 
+        """
+        _debug('GUIManager: step1_adapt_parameters')
+        
+        # Get the best time to probe
+        res = self.gui_analyser.determine_time_to_probe(self.gp_axis, 
+                                          self.gm_axis, 
+                                          self.bayes.post)   
+        self.t_probe_p, self.t_probe_m = res
+        
+        # Adapt the parameters of the pulse sequence according to the type of measurement
+        self.type_of_measurement = self.gui_analyser.treeDic_settings['Type_of_measurement']
+        # Set the parameters of the pulse sequence 
+        if self.type_of_measurement == 'diffm':
+            # Adapt the parameters of the pulse sequence
+            # The time probed is the best time for the diffm
+            self.t_probe = self.t_probe_m
+            # The pipulse is the pi-pulse for ms=-
+            p   = self.treeDic_settings['Pipulse-/power']
+            f   = self.treeDic_settings['Pipulse-/frequency']
+            dt  = self.treeDic_settings['Pipulse-/dt']
+            DIO = self.treeDic_settings['Pipulse-/DIO_modulation']
+            
+        if self.type_of_measurement == 'diffp':
+            # Adapt the parameters of the pulse sequence
+            # The time probed is the best time for the diffm
+            self.t_probe = self.t_probe_p
+            # The pipulse is the pi-pulse for ms=-
+            p   = self.treeDic_settings['Pipulse+/power']
+            f   = self.treeDic_settings['Pipulse+/frequency']
+            dt  = self.treeDic_settings['Pipulse+/dt']
+            DIO = self.treeDic_settings['Pipulse+/DIO_modulation']                                                    
+            
+        # Set the parameters of the pulse sequence
+        self.gui_measurer.treeDic_settings['t_probe'] = self.t_probe
+        self.gui_measurer.treeDic_settings['Frequency'] = f
+        self.gui_measurer.treeDic_settings['Power']     = p
+        self.gui_measurer.treeDic_settings['dt_pi_pulse'] = dt
+        self.gui_measurer.treeDic_settings['DIO_pulse_modulation'] = DIO
+        
+        
+        # Determine the number of readout for the next measurement. 
+        self.N_readout = self.gui_analyser.treeDic_settings['N_readout']
+        # We roughly want the loop to last less than one second. This is in
+        # order to avoid freeze out of the GUI
+        self.N_readout_per_FPGA_loop = int(1/(10*self.t_probe)) 
+        # Determine how many FPGA loop to perfom. 
+        # We take the ceil, such that we have at least 1 loop. 
+        self.N_FPGA_loop = int( np.ceil(self.N_readout/self.N_readout_per_loop) )
+        
+        
+    def step2_run_measurement(self):
+        """
+        Perform a measurement at the time probed.
+        
+        """
+        _debug('GUIManager: step2_run_measurement')
+        
+        # Prepare the parameters of the pulse sequence
+        # It gonna depends on what type of measurement
+        
+        
+        
+        # Prepare the pulse sequence
+        self.gui_measurer.button_prepare_experiment.click()
+        
+        # Convert the pulse sequence
+        self.gui_pulser.button_convert_sequence.click()
+        
+        # Set the number of readout
+        #TODO re-organize all the pulse sequence for making this step less clumpsy
+        self.gui_pulser.gui_pulse_builder.NumberBox_repetition.set_value(self.N_readout_per_FPGA_loop) 
+        # Set the number of FPGA loop to have. 
+        self.gui_pulser.NumberBox_N_loopFPGA.set_value(self.N_FPGA_loop)
+        
+        # Run it !
+        # It should stop after that the number of FPGA loop is performed
+        print('Measurerment started')
+        self.gui_pulser.button_start.click()
+        print('Measurerment done!')        
+        
+    def step3_extract_measurement(self):
+        """
+        Extract the data from the measurement taken
+        """
+        _debug('GUIManager: step3_extract_measurement')
+        print('Implement me !')
+        
+        
+        
+        
     def button_run_clicked(self):
         """
         Run the protocole !
         """
         _debug('GUIManager: button_run_clicked')
-        print('Implement me !!')
         
         # Make the attribute to match with the settings
         self.initiate_attributes()
         
-        #TODO It is here that we gonna implement the measurement and update of
-        #TODO  the best time to probe. 
+        # Step 1: Analyse the posterior to determine the best time to probe
+        # We gonna adapt all the parameters 
+        self.step1_adapt_parameters()
         
-        # Update the plot
-        self.update_image()        
+        # Step 2: Take a measurement with that.
+        self.step2_run_measurement()
+        
+        # Step 3: Feed the measurement data to the bayes inferencer
+        self.step3_extract_measurement()
+        # EX: self.bayes.give_measurement_diffp(arguments)
+
 
     def button_save_clicked(self):
         """
@@ -216,93 +377,50 @@ class GUIManager(egg.gui.Window):
         print('Implement me !!')
         # Note: we mght want to save everything in every GUI. 
         # That might require many databox. 
-        
-        
-    def button_fake_a_measure_clicked(self):
-        """
-        Fake a measure with a fake rate
-        """
-        _debug('GUIManager: button_fake_a_measure_clicked')
-        
-        # Fake a measurement
-        Gp_true, Gm_true = 15000, 32000
-        t = self.gui_pulser.gui_T1_probeOneTime.t_probe*1e-6
-        nb_readout = self.gui_pulser.rep
-        self.measured_f0 = np.random.poisson(nb_readout*self.model_functions[0](t, Gp_true, Gm_true))
-        self.measured_fp = np.random.poisson(nb_readout*self.model_functions[1](t, Gp_true, Gm_true))
-        self.measured_fm = np.random.poisson(nb_readout*self.model_functions[2](t, Gp_true, Gm_true))
-        diffp = self.measured_f0 - self.measured_fp
-        diffm = self.measured_f0 - self.measured_fm
-        #Add the fake measure as a data
-        self.bayes.add_measurement(t, nb_readout, diffp, diffm)
-        # Update the plot
-        self.update_image()
-                
-        
-        
-    def update_image(self):
-        """
-        Update the plot of the posterior. The title should be clear lol. 
-        """    
-        _debug('GUIManager: update_image')
-        
- 
-        # Set the axis 
-        # Get the scale (AKA the spacing between two neighboor points on the image)
-        self.scale_x = (self.gp_axis.max()-self.gp_axis.min())/len(self.gp_axis)*1e-3
-        self.scale_y = (self.gm_axis.max()-self.gm_axis.min())/len(self.gm_axis)*1e-3
-        
-        self.plot_item.setLabel('bottom', text='Gamma + (kHz)')
-        self.plot_item.setLabel('left'  , text='Gamma - (kHz)')      
-        
-        # Set the image
-        self.plot_image.setImage(self.bayes.get_post().T,
-                                 pos=(self.gp_axis.min(), self.gm_axis.min()),
-                                 scale =(self.scale_x, self.scale_y) )
-        # magic method for the image to fill all the space
-        self.plot_image.view.setAspectLocked(False) # Input True for having the scaling right.              
-    
-
-
-
 
 
     
 if __name__=="__main__":
     _debug_enabled = True
     gui_adaptive_T1_measurer._debug_enabled = True
+    gui_adaptive_T1_analyser._debug_enabled = True
     
     # Get the fpga paths and ressource number
     import spinmob as sm
     infos = sm.data.load('cpu_specifics.dat')
     bitfile_path = infos.headers['FPGA_bitfile_path']
     resource_num = infos.headers['FPGA_resource_number']
-    # Get the fpga API
-    import api_fpga as _fc
-    fpga = _fc.FPGA_api(bitfile_path, resource_num) 
-    fpga.open_session()
     
-    # For if we want to use the fake API for quick test
+#    # Get the fpga API
 #    import api_fpga as _fc
-#    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
-#    fpga_fake.open_session()
-    
+#    fpga = _fc.FPGA_api(bitfile_path, resource_num) 
+#    fpga.open_session()
+#    
 #    import gui_pulser
 #    # Note: we could also feed the pulser with the optimizer, but it is mostly
 #    # in the main experiment GUI that it matters. 
-#    gui = gui_pulser.GuiMainPulseSequence(fpga_fake)
+#    gui = gui_pulser.GuiMainPulseSequence(fpga)
 #    gui.show()
-
+#    
+#    self = GUIManager(gui, size=[1800,1000])
+#    self.show()
+#    
+    
+    
+    # For if we want to use the fake API for quick test
+    import api_fpga as _fc
+    fpga_fake = _fc.FPGA_fake_api(bitfile_path, resource_num) # Create the api   
+    fpga_fake.open_session()
     import gui_pulser
     # Note: we could also feed the pulser with the optimizer, but it is mostly
     # in the main experiment GUI that it matters. 
-    gui = gui_pulser.GuiMainPulseSequence(fpga)
+    gui = gui_pulser.GuiMainPulseSequence(fpga_fake)
     gui.show()
-    
     self = GUIManager(gui, size=[1800,1000])
     self.show()
     
     
+
     
     
     
