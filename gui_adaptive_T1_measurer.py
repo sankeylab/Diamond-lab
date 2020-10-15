@@ -476,39 +476,39 @@ class GUIProbe2StatesOneTime(egg.gui.Window):
         self.place_object(self.treeDic_settings, row=2, column=0)
 
         self.treeDic_settings.add_parameter('Power', -20, 
-                                            type='float', step=1, 
+                                            type='float', step=1, decimals=10,
                                             bounds=[-50,30], suffix=' dBm',
                                             tip='Constant power of the RF for the pipulse')
         self.treeDic_settings.add_parameter('Frequency', 3, 
-                                            type='float', step=0.1, 
+                                            type='float', step=0.1, decimals=10,
                                             bounds=[0,10], suffix=' GHz',
                                             tip='Frequency of the RF for the pipulse') 
         
         self.treeDic_settings.add_parameter('t_probe', 10, 
-                                            type='float', step=0.1, 
+                                            type='float', step=0.1, decimals=10,
                                             bounds=[0,None], suffix=' us',
                                             tip='Time to probe.') 
 
         self.treeDic_settings.add_parameter('dt_pi_pulse', 0.3, 
-                                            type='float', step=0.1, 
+                                            type='float', step=0.1, decimals=10,
                                             bounds=[0,None], suffix=' us',
                                             tip='Duration of pi pulse') 
         
         self.treeDic_settings.add_parameter('dt_laser_initiate', 3, 
-                                            type='float', step=0.1, 
+                                            type='float', step=0.1, decimals=10,
                                             bounds=[0,None], suffix=' us',
                                             tip='Duration of laser for initiating into ms=0')  
         self.treeDic_settings.add_parameter('dt_wait_after_initiate', 1.1, 
-                                            type='float', step=0.1, 
+                                            type='float', step=0.1, decimals=10,
                                             bounds=[0,None], suffix=' us',
                                             tip='Duration of time to wait between the laser initialization into ms=0 and the pi-pulse') 
         
         self.treeDic_settings.add_parameter('dt_readout', 0.4, 
-                                            type='float', step=0.1, 
+                                            type='float', step=0.1, decimals=10,
                                             bounds=[0,None], suffix=' us',
                                             tip='Duration of the readout') 
         self.treeDic_settings.add_parameter('delay_read_before_laser', 0.05, 
-                                            type='float', step=0.01, 
+                                            type='float', step=0.01, decimals=10,
                                             bounds=[0,None], suffix=' us',
                                             tip='Delay that we read before shining the laser')  
         

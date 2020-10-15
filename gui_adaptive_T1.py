@@ -313,10 +313,10 @@ class GUIManager(egg.gui.Window):
             self.t_probe = 0.5                                        
             
         # Set the parameters of the pulse sequence
-        self.gui_measurer.treeDic_settings['t_probe']     = self.t_probe
+        self.gui_measurer.treeDic_settings['t_probe']     = self.t_probe*1e6 # In us
         self.gui_measurer.treeDic_settings['Frequency']   = f
         self.gui_measurer.treeDic_settings['Power']       = p
-        self.gui_measurer.treeDic_settings['dt_pi_pulse'] = dt
+        self.gui_measurer.treeDic_settings['dt_pi_pulse'] = dt # in us
         self.gui_measurer.treeDic_settings['DIO_pulse_modulation'] = DIO
         
         
