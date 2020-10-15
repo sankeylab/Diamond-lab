@@ -325,6 +325,8 @@ class Bayes():
         """
         _debug('Bayes: update_post')
         
+        # Rescale the likelihood to avoid extreme number when takng the exponential
+        self.ln_Likelihood -= np.max(self.ln_Likelihood)
         # Update the posterior
         self.post = np.exp(self.ln_Likelihood)*self.mesh_prior
         # Normalize it
@@ -378,7 +380,7 @@ class Bayes():
         ln1 = -(self.z-self.mesh_z0)**2/(2*self.mesh_sigma_z0*self.mesh_sigma_z0)
         ln2 = -np.log(self.mesh_sigma_z0)
         self.ln_Likelihood += ln1 + ln2
-        
+
         self.update_post()
     
         
