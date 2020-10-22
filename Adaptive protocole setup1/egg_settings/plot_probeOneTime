@@ -1,0 +1,10 @@
+self.combo_binary,0
+self.combo_autoscript,0
+self.button_enabled,True
+self.button_multi,False
+self.button_link_x,True
+self.button_script,True
+self.number_file,0
+self.script,"h0, b0 = histogram(d[0])\nh1, b1 = histogram(d[1])\nh2, b2 = histogram(d[2])\nh3, b3 = histogram(d[3])\n# Note that the x axis should be make more centred on the bin\nx = ( b0[1:], b1[1:], b2[1:], b3[1:] )\ny = ( h0, h1, h2, h3 )\n\nxlabels = 'Counts'\nylabels = ( 'ms0', 'ms-1', 'ms+1', 'ref' )\n"
+_autosettings_standard_items,['self.combo_binary', 'self.combo_autoscript', 'self.button_enabled', 'self.button_multi', 'self.button_link_x', 'self.button_script', 'self.number_file', 'self.script']
+

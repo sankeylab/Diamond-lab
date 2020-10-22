@@ -1,0 +1,26 @@
+/Anana second/VISA|expanded	True
+/Anana second/VISA/Device	'USB0::0x03EB::0xAFFF::121-227450000-0385::INSTR'
+/Anana second/VISA/Device|expanded	True
+/Anana second/Generate-List|expanded	True
+/Anana second/Generate-List/f1	1000000000.0
+/Anana second/Generate-List/f1|expanded	True
+/Anana second/Generate-List/f2	10000000000.0
+/Anana second/Generate-List/f2|expanded	True
+/Anana second/Generate-List/P1	-30.0
+/Anana second/Generate-List/P1|expanded	True
+/Anana second/Generate-List/P2	-30.0
+/Anana second/Generate-List/P2|expanded	True
+/Anana second/Generate-List/Steps	100
+/Anana second/Generate-List/Steps|expanded	True
+/Anana second/Generate-List/Direction	'1->2'
+/Anana second/Generate-List/Direction|expanded	True
+/Anana second/Generate-List/Mode	'Linear'
+/Anana second/Generate-List/Mode|expanded	True
+/Anana second/Sweep|expanded	True
+/Anana second/Sweep/Iterations	1
+/Anana second/Sweep/Iterations|expanded	True
+/Anana second/Sweep/n1	0
+/Anana second/Sweep/n1|expanded	True
+/Anana second/Sweep/n2	10000000
+/Anana second/Sweep/n2|expanded	True
+

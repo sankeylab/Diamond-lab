@@ -1,0 +1,7 @@
+Decision_method	'Mean_rate'
+Decision_method|expanded	True
+Type_of_measurement	'diffp'
+Type_of_measurement|expanded	True
+N_readout	30000
+N_readout|expanded	True
+

@@ -1,0 +1,26 @@
+/Anapico/VISA|expanded	True
+/Anapico/VISA/Device	'USB0::0x03EB::0xAFFF::121-227450000-0385::INSTR'
+/Anapico/VISA/Device|expanded	True
+/Anapico/Generate-List|expanded	True
+/Anapico/Generate-List/f1	1000000000.0
+/Anapico/Generate-List/f1|expanded	True
+/Anapico/Generate-List/f2	10000000000.0
+/Anapico/Generate-List/f2|expanded	True
+/Anapico/Generate-List/P1	-30.0
+/Anapico/Generate-List/P1|expanded	True
+/Anapico/Generate-List/P2	-30.0
+/Anapico/Generate-List/P2|expanded	True
+/Anapico/Generate-List/Steps	100
+/Anapico/Generate-List/Steps|expanded	True
+/Anapico/Generate-List/Direction	'1->2'
+/Anapico/Generate-List/Direction|expanded	True
+/Anapico/Generate-List/Mode	'Linear'
+/Anapico/Generate-List/Mode|expanded	True
+/Anapico/Sweep|expanded	True
+/Anapico/Sweep/Iterations	1
+/Anapico/Sweep/Iterations|expanded	True
+/Anapico/Sweep/n1	0
+/Anapico/Sweep/n1|expanded	True
+/Anapico/Sweep/n2	10000000
+/Anapico/Sweep/n2|expanded	True
+

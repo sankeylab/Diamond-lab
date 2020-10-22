@@ -1,0 +1,9 @@
+/CONEX/VISA|expanded	True
+/CONEX/VISA/Device	'COM5'
+/CONEX/VISA/Device|expanded	True
+/CONEX/Motion|expanded	False
+/CONEX/Motion/Target_position	10.0
+/CONEX/Motion/Target_position|expanded	True
+/CONEX/Motion/Speed	2.0
+/CONEX/Motion/Speed|expanded	True
+
